@@ -116,7 +116,7 @@ window.BLOCKLY_DIR = (function() {
   if (!isNodeJS) {
     // Find name of current directory.
     var scripts = document.getElementsByTagName('script');
-    var re = new RegExp('(.+)[\/]blockly_uncompressed(_vertical|_horizontal|)\.js$');
+    var re = new RegExp('(.+)[\\/]blockly_uncompressed(_vertical|_horizontal|)\\.js$');
     for (var i = 0, script; script = scripts[i]; i++) {
       var match = re.exec(script.src);
       if (match) {
@@ -451,12 +451,12 @@ class Gen_compressed(threading.Thread):
       # The Closure Compiler preserves these.
       LICENSE = re.compile("""/\\*
 
- [\w ]+
+ [\\w ]+
 
  Copyright \\d+ Google Inc.
  https://developers.google.com/blockly/
 
- Licensed under the Apache License, Version 2.0 \(the "License"\);
+ Licensed under the Apache License, Version 2.0 \\(the "License"\\);
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at
 
