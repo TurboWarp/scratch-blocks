@@ -13,7 +13,7 @@
   "browser": "./shim/vertical.js",
   "scripts": {
     "deploy": "rimraf gh-pages/closure-library/scripts/ci/CloseAdobeDialog.exe && gh-pages -t -d gh-pages -m \"Build for $(git log --pretty=format:%H -n1) [skip ci]\"",
-    "prepublish": "python3 build.py && webpack",
+    "prepublish": "node universal-python.js build.py && webpack",
     "test:unit": "node tests/jsunit/test_runner.js",
     "test:lint": "eslint .",
     "test:messages": "npm run translate && node i18n/test_scratch_msgs.js",
@@ -46,6 +46,7 @@
     "transifex": "1.6.6",
     "uglifyjs-webpack-plugin": "1.3.0",
     "webpack": "4.47.0",
-    "webpack-cli": "3.3.12"
+    "webpack-cli": "3.3.12",
+    "which": "^4.0.0"
   }
 }
