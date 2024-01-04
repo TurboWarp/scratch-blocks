@@ -6,6 +6,12 @@
 
 ## Local development
 
+Requires Node.js (`node`), Python (`python3`), and Java (`java`). It is known to work in these environments but should work in others:
+
+ - Windows 10, Python 3.11.7 (Microsoft Store), Node.js 20.10.0 (nodejs.org installer), Java 11 (Temurin-11.0.21+9)
+
+Python 3.12 currently does not work.
+
 Install dependencies:
 
 ```sh
@@ -20,7 +26,7 @@ To build, run:
 npm run prepublish
 ```
 
-requires Python (2 or 3). scratch-gui development server must be restarted to update linked scratch-blocks.
+scratch-gui development server must be restarted to update linked scratch-blocks.
 
 <!--
 #### Scratch Blocks is a library for building creative computing interfaces.

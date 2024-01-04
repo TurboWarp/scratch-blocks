@@ -36,7 +36,7 @@
 
 import sys
 
-import errno, glob, json, os, re, subprocess, threading, codecs, functools
+import errno, glob, json, os, re, subprocess, threading, codecs, functools, platform
 
 if sys.version_info[0] == 2:
   import httplib
@@ -333,8 +333,20 @@ class Gen_compressed(threading.Thread):
       for group in [[CLOSURE_COMPILER_NPM], dash_args]:
         args.extend(filter(lambda item: item, group))
 
+      # On Windows, the command line is too long, so we save the arguments to a file instead
+      use_flagfile = platform.system() == "Windows"
+      if platform.system() == "Windows":
+        flagfile_name = target_filename + ".config"
+        with open(flagfile_name, "w") as f:
+          # \ needs to be escaped still
+          f.write(" ".join(args[1:]).replace("\\", "\\\\"))
+        args = [CLOSURE_COMPILER_NPM, "--flagfile", flagfile_name]
+
       proc = subprocess.Popen(args, stdin=subprocess.PIPE, stdout=subprocess.PIPE)
       (stdout, stderr) = proc.communicate()
+
+      if use_flagfile:
+        os.remove(flagfile_name)
 
       # Build the JSON response.
       filesizes = [os.path.getsize(value) for (arg, value) in params if arg == "js_file"]
