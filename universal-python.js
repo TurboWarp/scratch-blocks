@@ -24,7 +24,7 @@ function run(command, args) {
     // Microsoft Store install shim exits with code 9009
     if (process.platform === 'win32' && code === 9009) {
       // eslint-disable-next-line max-len
-      console.log('universal-python: Attempted to start python, but got the Microsoft Store installation shim. Install python from the Microsoft Store or python.org. (code 9009)')
+      console.log('universal-python: Attempted to start python, but got the Microsoft Store installation shim. Install python from the Microsoft Store or python.org. (code 9009)');
     } else if (code === 0) {
       console.log('universal-python: Success');
     } else {
