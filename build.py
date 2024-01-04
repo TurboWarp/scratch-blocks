@@ -636,13 +636,23 @@ if __name__ == "__main__":
   # Run all tasks in parallel threads.
   # Uncompressed is limited by processor speed.
   # Compressed is limited by network and server speed.
-  # Vertical:
-  Gen_uncompressed(search_paths_vertical, True, closure_env).start()
-  # Horizontal:
-  Gen_uncompressed(search_paths_horizontal, False, closure_env).start()
+  threads = [
+    # Vertical:
+    Gen_uncompressed(search_paths_vertical, True, closure_env),
+    # Horizontal:
+    Gen_uncompressed(search_paths_horizontal, False, closure_env),
+    # Compressed forms of vertical and horizontal.
+    Gen_compressed(search_paths_vertical, search_paths_horizontal, closure_env),
 
-  # Compressed forms of vertical and horizontal.
-  Gen_compressed(search_paths_vertical, search_paths_horizontal, closure_env).start()
+    # This is run locally in a separate thread.
+    # Gen_langfiles()
+  ]
 
-  # This is run locally in a separate thread.
-  # Gen_langfiles().start()
+  for thread in threads:
+    thread.start()
+
+  # Need to wait for all threads to finish before the main process ends as in Python 3.12,
+  # once the main interpreter is being shutdown, trying to spawn more child threads will
+  # raise "RuntimeError: can't create new thread at interpreter shutdown"
+  for thread in threads:
+    thread.join()

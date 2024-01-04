@@ -9,8 +9,7 @@
 Requires Node.js (`node`), Python (`python3`), and Java (`java`). It is known to work in these environments but should work in others:
 
  - Windows 10, Python 3.11.7 (Microsoft Store), Node.js 20.10.0 (nodejs.org installer), Java 11 (Temurin-11.0.21+9)
-
-Python 3.12 currently does not work.
+ - Windows 10, Python 3.12.1 (Microsoft Store), Node.js 20.10.0 (nodejs.org installer), Java 11 (Temurin-11.0.21+9)
 
 Install dependencies:
 
@@ -18,9 +17,9 @@ Install dependencies:
 npm ci
 ```
 
-The playground to use for local testing is tests/vertical_playground.html.
+Open tests/vertical_playground.html in a browser for local testing. You don't need to rebuild compressed versions for most changes.
 
-To build, run:
+To re-build compressed versions, run:
 
 ```sh
 npm run prepublish
