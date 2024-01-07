@@ -52,7 +52,7 @@ Blockly.DataCategory = function(workspace) {
   }
 
   if (variableModelList.length > 0) {
-    xmlList[xmlList.length - 1].setAttribute('gap', 24);
+    xmlList[xmlList.length - 1].setAttribute('gap', 28);
     var firstVariable = variableModelList[0];
 
     Blockly.DataCategory.addSetVariableTo(xmlList, firstVariable);
@@ -70,7 +70,7 @@ Blockly.DataCategory = function(workspace) {
   }
 
   if (variableModelList.length > 0) {
-    xmlList[xmlList.length - 1].setAttribute('gap', 24);
+    xmlList[xmlList.length - 1].setAttribute('gap', 28);
     var firstVariable = variableModelList[0];
 
     Blockly.DataCategory.addAddToList(xmlList, firstVariable);
