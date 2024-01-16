@@ -238,7 +238,7 @@ Blockly.Procedures.flyoutCategory = function(workspace) {
     // </block>
     var block = goog.dom.createDom('block');
     block.setAttribute('type', 'procedures_call');
-    block.setAttribute('gap', 16);
+    block.setAttribute('gap', 12);
     block.appendChild(mutation);
     xmlList.push(block);
   }
@@ -251,7 +251,7 @@ Blockly.Procedures.flyoutCategory = function(workspace) {
   if (showReturn) {
     var returnBlock = goog.dom.createDom('block');
     returnBlock.setAttribute('type', Blockly.PROCEDURES_RETURN_BLOCK_TYPE);
-    returnBlock.setAttribute('gap', 16);
+    returnBlock.setAttribute('gap', 12);
     var returnBlockValue = goog.dom.createDom('value');
     returnBlockValue.setAttribute('name', 'VALUE');
     var returnBlockShadow = goog.dom.createDom('shadow');
