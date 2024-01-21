@@ -345,7 +345,7 @@ Blockly.FieldColourSlider.prototype.showEditor_ = function() {
             this.activateEyedropperInternal_);
   }
 
-  Blockly.DropDownDiv.setColour('#ffffff', '#dddddd');
+  Blockly.DropDownDiv.setColour(Blockly.Colours.valueReportBackground, Blockly.Colours.valueReportBorder);
   Blockly.DropDownDiv.setCategory(this.sourceBlock_.parentBlock_.getCategory());
   Blockly.DropDownDiv.showPositionedByBlock(this, this.sourceBlock_);
 

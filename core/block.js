@@ -852,7 +852,7 @@ Blockly.Block.prototype.makeColour_ = function(colour) {
   var hue = Number(colour);
   if (!isNaN(hue)) {
     return Blockly.hueToRgb(hue);
-  } else if (goog.isString(colour) && colour.match(/^#[0-9a-fA-F]{6}$/)) {
+  } else if (goog.isString(colour) && colour.match(/^#[0-9a-fA-F]{6,8}$/)) {
     return colour;
   } else {
     throw 'Invalid colour: ' + colour;

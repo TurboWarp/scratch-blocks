@@ -98,6 +98,7 @@ Blockly.Colours = {
   "toolboxHover": "#4C97FF",
   "toolboxSelected": "#e9eef2",
   "toolboxText": "#575E75",
+  "blackText": "#575E75",
   "toolbox": "#FFFFFF",
   "flyout": "#F9F9F9",
   "scrollbar": "#CECDCE",

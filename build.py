@@ -36,7 +36,7 @@
 
 import sys
 
-import errno, glob, json, os, re, subprocess, threading, codecs, functools
+import errno, glob, json, os, re, subprocess, threading, codecs, functools, platform
 
 if sys.version_info[0] == 2:
   import httplib
@@ -116,7 +116,7 @@ window.BLOCKLY_DIR = (function() {
   if (!isNodeJS) {
     // Find name of current directory.
     var scripts = document.getElementsByTagName('script');
-    var re = new RegExp('(.+)[\/]blockly_uncompressed(_vertical|_horizontal|)\.js$');
+    var re = new RegExp('(.+)[\\/]blockly_uncompressed(_vertical|_horizontal|)\\.js$');
     for (var i = 0, script; script = scripts[i]; i++) {
       var match = re.exec(script.src);
       if (match) {
@@ -333,8 +333,20 @@ class Gen_compressed(threading.Thread):
       for group in [[CLOSURE_COMPILER_NPM], dash_args]:
         args.extend(filter(lambda item: item, group))
 
+      # On Windows, the command line is too long, so we save the arguments to a file instead
+      use_flagfile = platform.system() == "Windows"
+      if platform.system() == "Windows":
+        flagfile_name = target_filename + ".config"
+        with open(flagfile_name, "w") as f:
+          # \ needs to be escaped still
+          f.write(" ".join(args[1:]).replace("\\", "\\\\"))
+        args = [CLOSURE_COMPILER_NPM, "--flagfile", flagfile_name]
+
       proc = subprocess.Popen(args, stdin=subprocess.PIPE, stdout=subprocess.PIPE)
       (stdout, stderr) = proc.communicate()
+
+      if use_flagfile:
+        os.remove(flagfile_name)
 
       # Build the JSON response.
       filesizes = [os.path.getsize(value) for (arg, value) in params if arg == "js_file"]
@@ -439,12 +451,12 @@ class Gen_compressed(threading.Thread):
       # The Closure Compiler preserves these.
       LICENSE = re.compile("""/\\*
 
- [\w ]+
+ [\\w ]+
 
  Copyright \\d+ Google Inc.
  https://developers.google.com/blockly/
 
- Licensed under the Apache License, Version 2.0 \(the "License"\);
+ Licensed under the Apache License, Version 2.0 \\(the "License"\\);
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at
 
@@ -583,28 +595,17 @@ if __name__ == "__main__":
 
     print("Using local compiler: %s ...\n" % CLOSURE_COMPILER_NPM)
   except (ImportError, AssertionError):
-    print("Using remote compiler: closure-compiler.appspot.com ...\n")
-
-    try:
-      closure_dir = CLOSURE_DIR
-      closure_root = CLOSURE_ROOT
-      closure_library = CLOSURE_LIBRARY
-      closure_compiler = CLOSURE_COMPILER
-
-      calcdeps = import_path(os.path.join(
-          closure_root, closure_library, "closure", "bin", "calcdeps.py"))
-    except ImportError:
-      if os.path.isdir(os.path.join(os.path.pardir, "closure-library-read-only")):
-        # Dir got renamed when Closure moved from Google Code to GitHub in 2014.
-        print("Error: Closure directory needs to be renamed from"
-              "'closure-library-read-only' to 'closure-library'.\n"
-              "Please rename this directory.")
-      elif os.path.isdir(os.path.join(os.path.pardir, "google-closure-library")):
-        print("Error: Closure directory needs to be renamed from"
-             "'google-closure-library' to 'closure-library'.\n"
-             "Please rename this directory.")
-      else:
-        print("""Error: Closure not found.  Read this:
+    if os.path.isdir(os.path.join(os.path.pardir, "closure-library-read-only")):
+      # Dir got renamed when Closure moved from Google Code to GitHub in 2014.
+      print("Error: Closure directory needs to be renamed from"
+            "'closure-library-read-only' to 'closure-library'.\n"
+            "Please rename this directory.")
+    elif os.path.isdir(os.path.join(os.path.pardir, "google-closure-library")):
+      print("Error: Closure directory needs to be renamed from"
+            "'google-closure-library' to 'closure-library'.\n"
+            "Please rename this directory.")
+    else:
+      print("""Error: Closure not found. Usually this means 'npm ci' failed. Try running it again? More resources:
   developers.google.com/blockly/guides/modify/web/closure""")
       sys.exit(1)
 
@@ -624,13 +625,23 @@ if __name__ == "__main__":
   # Run all tasks in parallel threads.
   # Uncompressed is limited by processor speed.
   # Compressed is limited by network and server speed.
-  # Vertical:
-  Gen_uncompressed(search_paths_vertical, True, closure_env).start()
-  # Horizontal:
-  Gen_uncompressed(search_paths_horizontal, False, closure_env).start()
+  threads = [
+    # Vertical:
+    Gen_uncompressed(search_paths_vertical, True, closure_env),
+    # Horizontal:
+    Gen_uncompressed(search_paths_horizontal, False, closure_env),
+    # Compressed forms of vertical and horizontal.
+    Gen_compressed(search_paths_vertical, search_paths_horizontal, closure_env),
 
-  # Compressed forms of vertical and horizontal.
-  Gen_compressed(search_paths_vertical, search_paths_horizontal, closure_env).start()
+    # This is run locally in a separate thread.
+    # Gen_langfiles()
+  ]
 
-  # This is run locally in a separate thread.
-  # Gen_langfiles().start()
+  for thread in threads:
+    thread.start()
+
+  # Need to wait for all threads to finish before the main process ends as in Python 3.12,
+  # once the main interpreter is being shutdown, trying to spawn more child threads will
+  # raise "RuntimeError: can't create new thread at interpreter shutdown"
+  for thread in threads:
+    thread.join()

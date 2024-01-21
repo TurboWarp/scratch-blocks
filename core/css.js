@@ -722,6 +722,7 @@ Blockly.Css.CONTENT = [
     'color: $colour_textFieldText;',
     'background-color: $colour_textField;',
     'font-weight: 500;',
+    'color-scheme: light;',
   '}',
 
   '.blocklyMainBackground {',
@@ -986,7 +987,7 @@ Blockly.Css.CONTENT = [
     'border: none;',
     'width: 100%;',
     'text-align: center;',
-    'border-top: 1px solid #ddd;',
+    'border-top: 1px solid $colour_valueReportBorder;',
     'padding-top: 5px;',
     'cursor: pointer;',
   '}',
@@ -994,7 +995,7 @@ Blockly.Css.CONTENT = [
   '.scratchColourPickerLabel {',
     'font-family: "Helvetica Neue", Helvetica, sans-serif;',
     'font-size: 0.65rem;',
-    'color: $colour_toolboxText;',
+    'color: $colour_valueReportForeground;',
     'margin: 8px;',
   '}',
 
@@ -1015,7 +1016,7 @@ Blockly.Css.CONTENT = [
   '.scratchNotePickerKeyLabel {',
     'font-family: "Helvetica Neue", Helvetica, sans-serif;',
     'font-size: 0.75rem;',
-    'fill: $colour_textFieldText;',
+    'fill: $colour_blackText;',
     'pointer-events: none;',
   '}',
 

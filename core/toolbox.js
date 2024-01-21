@@ -785,12 +785,12 @@ Blockly.Toolbox.Category.prototype.setColour = function(node) {
   var colour = node.getAttribute('colour');
   var secondaryColour = node.getAttribute('secondaryColour');
   if (goog.isString(colour)) {
-    if (colour.match(/^#[0-9a-fA-F]{6}$/)) {
+    if (colour.match(/^#[0-9a-fA-F]{6,8}$/)) {
       this.colour_ = colour;
     } else {
       this.colour_ = Blockly.hueToRgb(colour);
     }
-    if (secondaryColour.match(/^#[0-9a-fA-F]{6}$/)) {
+    if (secondaryColour.match(/^#[0-9a-fA-F]{6,8}$/)) {
       this.secondaryColour_ = secondaryColour;
     } else {
       this.secondaryColour_ = Blockly.hueToRgb(secondaryColour);
