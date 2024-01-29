@@ -60,7 +60,7 @@ Blockly.Connection = function(source, type) {
  */
 Blockly.Connection.CAN_CONNECT = 0;
 Blockly.Connection.REASON_SELF_CONNECTION = 1;
-Blockly.Connection.REASON_WRONG_TYPE = 2; // this should not be used if i did it correctly
+Blockly.Connection.REASON_WRONG_TYPE = 2;
 Blockly.Connection.REASON_TARGET_NULL = 3;
 Blockly.Connection.REASON_CHECKS_FAILED = 4;
 Blockly.Connection.REASON_DIFFERENT_WORKSPACES = 5;
@@ -311,6 +311,8 @@ Blockly.Connection.prototype.canConnectWithReason_ = function(target) {
     return Blockly.Connection.REASON_SELF_CONNECTION;
   } else if (blockA && blockB && blockA.workspace !== blockB.workspace) {
     return Blockly.Connection.REASON_DIFFERENT_WORKSPACES;
+  } else if (target.type != Blockly.OPPOSITE_TYPE[this.type]) {
+    return Blockly.Connection.REASON_WRONG_TYPE;
   } else if (!this.checkType_(target)) {
     return Blockly.Connection.REASON_CHECKS_FAILED;
   } else if (blockA.isShadow() && !blockB.isShadow()) {
