@@ -287,6 +287,11 @@ Blockly.Connection.prototype.isConnected = function() {
 };
 
 /**
+ * Disables tyoe checking.
+ */
+Blockly.Connection.prototype.disableTypeChecking = false;
+
+/**
  * Checks whether the current connection can connect with the target
  * connection.
  * @param {Blockly.Connection} target Connection to check compatibility with.
@@ -312,6 +317,7 @@ Blockly.Connection.prototype.canConnectWithReason_ = function(target) {
   } else if (blockA && blockB && blockA.workspace !== blockB.workspace) {
     return Blockly.Connection.REASON_DIFFERENT_WORKSPACES;
   } else if (target.type != Blockly.OPPOSITE_TYPE[this.type]) {
+    if (this.disableTypeChecking) return Blockly.Connection.CAN_CONNECT;
     return Blockly.Connection.REASON_WRONG_TYPE;
   } else if (!this.checkType_(target)) {
     return Blockly.Connection.REASON_CHECKS_FAILED;
