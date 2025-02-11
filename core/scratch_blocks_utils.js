@@ -76,9 +76,12 @@ Blockly.scratchBlocksUtils.changeObscuredShadowIds = function(block) {
  * Set of blocks that have special behaviour in scratch-blocks where they're
  * duplicated when dragged, and they are rendered slightly differently from
  * normalshadow blocks.
- * @type {Set<string>}
+ * @type {string[]}
  */
-Blockly.scratchBlocksUtils.shadowArgumentReporters = new Set(['argument_reporter_boolean', 'argument_reporter_string_number']);
+Blockly.scratchBlocksUtils.shadowArgumentReporters = [
+  'argument_reporter_boolean',
+  'argument_reporter_string_number'
+];
 
 /**
  * Whether a block is both a shadow block and an argument reporter.  These
@@ -91,7 +94,7 @@ Blockly.scratchBlocksUtils.shadowArgumentReporters = new Set(['argument_reporter
  * @package
  */
 Blockly.scratchBlocksUtils.isShadowArgumentReporter = function(block) {
-  return (block.isShadow() && Blockly.scratchBlocksUtils.shadowArgumentReporters.has(block.type));
+  return (block.isShadow() && Blockly.scratchBlocksUtils.shadowArgumentReporters.includes(block.type));
 };
 
 /**
