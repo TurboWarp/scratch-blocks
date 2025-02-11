@@ -448,3 +448,6 @@ Blockly.Extensions.extensionParentTooltip_ = function() {
 };
 Blockly.Extensions.register('parent_tooltip_when_inline',
     Blockly.Extensions.extensionParentTooltip_);
+Blockly.Extensions.register('shadow_argument_reporter', function() {
+    this.shadow_argument_reporter = true;
+});
