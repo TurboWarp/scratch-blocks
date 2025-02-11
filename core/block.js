@@ -211,6 +211,12 @@ Blockly.Block = function(workspace, prototypeName, opt_id) {
 };
 
 /**
+ * Whether or not this block is a shadow argument reporter. (used by VM)
+ * @type {boolean}
+ */
+Blockly.Block.prototype.shadow_argument_reporter = false;
+
+/**
  * Optional text data that round-trips beween blocks and XML.
  * Has no effect. May be used by 3rd parties for meta information.
  * @type {?string}
