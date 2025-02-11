@@ -291,7 +291,7 @@ Blockly.ScratchBlocks.VerticalExtensions.registerAll = function() {
   
   // Blocks that are regenerative shadow reporters
   Blockly.Extensions.register('shadow_argument_reporter',
-    Blockly.ScratchBlocks.VerticalExtensions.SHADOW_ARGUMENT_REPORTER);
+      Blockly.ScratchBlocks.VerticalExtensions.SHADOW_ARGUMENT_REPORTER);
 };
 
 Blockly.ScratchBlocks.VerticalExtensions.registerAll();
