@@ -232,6 +232,10 @@ Blockly.ScratchBlocks.VerticalExtensions.SCRATCH_EXTENSION = function() {
   this.isScratchExtension = true;
 };
 
+Blockly.ScratchBlocks.VerticalExtensions.SHADOW_ARGUMENT_REPORTER = function() {
+  this.shadow_argument_reporter = true;
+};
+
 /**
  * Register all extensions for scratch-blocks.
  * @package
@@ -284,6 +288,10 @@ Blockly.ScratchBlocks.VerticalExtensions.registerAll = function() {
   // Misleading name. Given to blocks that have an extension icon.
   Blockly.Extensions.register('scratch_extension',
       Blockly.ScratchBlocks.VerticalExtensions.SCRATCH_EXTENSION);
+  
+  // Blocks that are regenerative shadow reporters
+  Blockly.Extensions.register('shadow_argument_reporter',
+    Blockly.ScratchBlocks.VerticalExtensions.SHADOW_ARGUMENT_REPORTER);
 };
 
 Blockly.ScratchBlocks.VerticalExtensions.registerAll();
