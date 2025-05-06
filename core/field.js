@@ -296,11 +296,11 @@ Blockly.Field.prototype.updateEditable = function() {
   if (this.sourceBlock_.isEditable()) {
     Blockly.utils.addClass(group, 'blocklyEditableText');
     Blockly.utils.removeClass(group, 'blocklyNonEditableText');
-    this.fieldGroup_.style.cursor = this.CURSOR;
+    this.getClickTarget_().style.cursor = this.CURSOR;
   } else {
     Blockly.utils.addClass(group, 'blocklyNonEditableText');
     Blockly.utils.removeClass(group, 'blocklyEditableText');
-    this.fieldGroup_.style.cursor = '';
+    this.getClickTarget_().style.cursor = '';
   }
 };
 
