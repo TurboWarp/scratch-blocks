@@ -175,7 +175,7 @@ Blockly.FieldAngle.prototype.showEditor_ = function() {
   Blockly.DropDownDiv.clearContent();
   var div = Blockly.DropDownDiv.getContentDiv();
   // Build the SVG DOM.
-  const srcBlock = this.sourceBlock_.parentBlock_;
+  const parentBlock = this.sourceBlock_.parentBlock_;
   var svg = Blockly.utils.createSvgElement('svg', {
     'xmlns': 'http://www.w3.org/2000/svg',
     'xmlns:html': 'http://www.w3.org/1999/xhtml',
@@ -187,8 +187,8 @@ Blockly.FieldAngle.prototype.showEditor_ = function() {
   Blockly.utils.createSvgElement('circle', {
     'cx': Blockly.FieldAngle.HALF, 'cy': Blockly.FieldAngle.HALF,
     'r': Blockly.FieldAngle.RADIUS,
-    'fill': srcBlock.getColourSecondary(),
-    'stroke': srcBlock.getColourTertiary(),
+    'fill': parentBlock.getColourSecondary(),
+    'stroke': parentBlock.getColourTertiary(),
     'class': 'blocklyAngleCircle'
   }, svg);
   this.gauge_ = Blockly.utils.createSvgElement('path',
@@ -248,12 +248,12 @@ Blockly.FieldAngle.prototype.showEditor_ = function() {
       'xlink:href',
       Blockly.mainWorkspace.options.pathToMedia + Blockly.FieldAngle.ARROW_SVG_PATH
   );
-  const blockHSL = goog.color.hexToHsl(srcBlock.getColour());
+  const blockHSL = goog.color.hexToHsl(parentBlock.getColour());
   // -214.86 stems from the blue hue in 'Blockly.FieldAngle.ARROW_SVG_PATH'
   this.arrowSvg_.setAttribute("filter", `hue-rotate(${-214.86 + blockHSL[0]}deg) saturate(${blockHSL[1]}) brightness(${blockHSL[2] * 1.8})`);
 
-  Blockly.DropDownDiv.setColour(srcBlock.getColour(), this.sourceBlock_.getColourTertiary());
-  Blockly.DropDownDiv.setCategory(srcBlock.getCategory());
+  Blockly.DropDownDiv.setColour(parentBlock.getColour(), this.sourceBlock_.getColourTertiary());
+  Blockly.DropDownDiv.setCategory(parentBlock.getCategory());
   Blockly.DropDownDiv.showPositionedByBlock(this, this.sourceBlock_);
 
   this.mouseDownWrapper_ =
