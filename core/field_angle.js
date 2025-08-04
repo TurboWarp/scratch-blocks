@@ -137,9 +137,22 @@ Blockly.FieldAngle.RADIUS = Blockly.FieldAngle.HALF
 Blockly.FieldAngle.CENTER_RADIUS = 2;
 
 /**
- * Path to the arrow svg icon.
+ * SVG path data for arrow icon.
  */
-Blockly.FieldAngle.ARROW_SVG_PATH = 'icons/arrow.svg';
+Blockly.FieldAngle.ARROW_SVG_PATH_DATA =
+    'M 0.0189 -1.3178' +
+    ' L -4.4901 -0.5663' +
+    ' C -4.7532 -0.5224 -4.9811 -0.2606 -4.9811 0.0156' +
+    ' C -4.9811 0.2836 -4.7613 0.5522 -4.4901 0.5974' +
+    ' L 0.0189 1.3489' +
+    ' L 0.0189 3.0185' +
+    ' C 0.0189 3.5625 0.3833 3.752 0.8327 3.4269' +
+    ' L 4.641 0.6721' +
+    ' C 5.0982 0.3414 5.0957 -0.1853 4.6527 -0.5168' +
+    ' L 0.821 -3.3842' +
+    ' C 0.3756 -3.7175 0.0189 -3.5381 0.0189 -2.9874' +
+    ' L 0.0189 -1.3178' +
+    ' Z';
 
 /**
  * Clean up this FieldAngle, as well as the inherited FieldTextInput.
@@ -234,27 +247,17 @@ Blockly.FieldAngle.prototype.showEditor_ = function() {
     'r': Blockly.FieldAngle.HANDLE_RADIUS,
     'class': 'blocklyAngleDragHandle'
   }, this.handle_);
-  this.arrowSvg_ = Blockly.utils.createSvgElement('image',
+  this.arrowSvg_ = Blockly.utils.createSvgElement('path',
       {
         'width': Blockly.FieldAngle.ARROW_WIDTH,
         'height': Blockly.FieldAngle.ARROW_WIDTH,
         'x': -Blockly.FieldAngle.ARROW_WIDTH / 2,
         'y': -Blockly.FieldAngle.ARROW_WIDTH / 2,
-        'class': 'blocklyAngleDragArrow'
+        'class': 'blocklyAngleDragArrow',
+        'fill': parentBlock.getColour(),
+        'd': Blockly.FieldAngle.ARROW_SVG_PATH_DATA
       },
       this.handle_);
-  this.arrowSvg_.setAttributeNS(
-      'http://www.w3.org/1999/xlink',
-      'xlink:href',
-      Blockly.mainWorkspace.options.pathToMedia + Blockly.FieldAngle.ARROW_SVG_PATH
-  );
-  var blockHSL = goog.color.hexToHsl(parentBlock.getColour());
-  // -214.86 stems from the blue hue in 'Blockly.FieldAngle.ARROW_SVG_PATH'
-  this.arrowSvg_.setAttribute(
-      'filter',
-      'hue-rotate(' + (-214.86 + blockHSL[0]) + 'deg) saturate(' +
-          blockHSL[1] + ') brightness(' + (blockHSL[2] * 1.8) + ')'
-  );
 
   Blockly.DropDownDiv.setColour(parentBlock.getColour(), this.sourceBlock_.getColourTertiary());
   Blockly.DropDownDiv.setCategory(parentBlock.getCategory());
