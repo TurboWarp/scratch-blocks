@@ -73,6 +73,12 @@ Blockly.Colours = {
     "tertiary": "#389438",
     "quaternary": "#389438"
   },
+  "complex": {
+    "primary": "#FF6680",
+    "secondary": "#FF4D6A",
+    "tertiary": "#FF3355",
+    "quaternary": "#FF3355"
+  },
   "data": {
     "primary": "#FF8C1A",
     "secondary": "#FF8000",
