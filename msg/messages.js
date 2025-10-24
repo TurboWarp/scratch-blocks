@@ -295,6 +295,7 @@ Blockly.Msg.CATEGORY_SENSING = 'Sensing';
 Blockly.Msg.CATEGORY_OPERATORS = 'Operators';
 Blockly.Msg.CATEGORY_VARIABLES = 'Variables';
 Blockly.Msg.CATEGORY_MYBLOCKS = 'My Blocks';
+Blockly.Msg.CATEGORY_COMPLEX = 'Complex';
 
 // Context menus
 Blockly.Msg.DUPLICATE = 'Duplicate';
