@@ -362,7 +362,7 @@ Blockly.Blocks['operator_complex_create'] = {
         }
       ],
       "category": Blockly.Categories.complex,
-      "extensions": ["colours_operators", "output_string"]
+      "extensions": ["colours_complex", "output_string"]
     });
   }
 };
@@ -388,7 +388,7 @@ Blockly.Blocks['operator_complex_add'] = {
         }
       ],
       "category": Blockly.Categories.complex,
-      "extensions": ["colours_operators", "output_string"]
+      "extensions": ["colours_complex", "output_string"]
     });
   }
 };
