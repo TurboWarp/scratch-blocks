@@ -172,58 +172,6 @@ Blockly.Blocks['operator_lt'] = {
   }
 };
 
-Blockly.Blocks['operator_complex_create'] = {
-  /**
-   * Block for creating a complex number.
-   * @this Blockly.Block
-   */
-  init: function() {
-    this.jsonInit({
-      "message0": "create complex number real: %1 imaginary: %2",
-      "args0": [
-        {
-          "type": "input_value",
-          "name": "RE",
-          "check": "Number"
-        },
-        {
-          "type": "input_value",
-          "name": "IM",
-          "check": "Number"
-        }
-      ],
-      "category": Blockly.Categories.operators,
-      "extensions": ["colours_operators", "output_string"]
-    });
-  }
-};
-
-Blockly.Blocks['operator_complex_add'] = {
-  /**
-   * Block for adding two complex numbers.
-   * @this Blockly.Block
-   */
-  init: function() {
-    this.jsonInit({
-      "message0": "add complex %1 + %2",
-      "args0": [
-        {
-          "type": "input_value",
-          "name": "A",
-          "check": "String"
-        },
-        {
-          "type": "input_value",
-          "name": "B",
-          "check": "String"
-        }
-      ],
-      "category": Blockly.Categories.operators,
-      "extensions": ["colours_operators", "output_string"]
-    });
-  }
-};
-
 Blockly.Blocks['operator_equals'] = {
   /**
    * Block for equals comparator.
@@ -392,6 +340,59 @@ Blockly.Blocks['operator_letter_of'] = {
     });
   }
 };
+
+Blockly.Blocks['operator_complex_create'] = {
+  /**
+   * Block for creating a complex number.
+   * @this Blockly.Block
+   */
+  init: function() {
+    this.jsonInit({
+      "message0": "create complex number real: %1 imaginary: %2",
+      "args0": [
+        {
+          "type": "input_value",
+          "name": "RE",
+          "check": "Number"
+        },
+        {
+          "type": "input_value",
+          "name": "IM",
+          "check": "Number"
+        }
+      ],
+      "category": Blockly.Categories.complex,
+      "extensions": ["colours_operators", "output_string"]
+    });
+  }
+};
+
+Blockly.Blocks['operator_complex_add'] = {
+  /**
+   * Block for adding two complex numbers.
+   * @this Blockly.Block
+   */
+  init: function() {
+    this.jsonInit({
+      "message0": "add complex %1 + %2",
+      "args0": [
+        {
+          "type": "input_value",
+          "name": "A",
+          "check": "String"
+        },
+        {
+          "type": "input_value",
+          "name": "B",
+          "check": "String"
+        }
+      ],
+      "category": Blockly.Categories.complex,
+      "extensions": ["colours_operators", "output_string"]
+    });
+  }
+};
+
 
 Blockly.Blocks['operator_length'] = {
   /**
