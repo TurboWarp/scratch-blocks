@@ -388,10 +388,21 @@ Blockly.Xml.domToPrettyText = function(dom) {
 Blockly.Xml.textToDom = function(text) {
   var oParser = new DOMParser();
   var dom = oParser.parseFromString(text, 'text/xml');
-  // The DOM should have one and only one top-level node, an XML tag.
+  // The DOM should have one and only one top-level node, an XML tag, and no
+  // parse error (some invalid characters cause document to be truncated and
+  // a <parsererror> is generated)
   if (!dom || !dom.firstChild ||
       dom.firstChild.nodeName.toLowerCase() != 'xml' ||
-      dom.firstChild !== dom.lastChild) {
+      dom.firstChild !== dom.lastChild ||
+      dom.getElementsByTagName('parsererror').length) {
+    // Matching Scratch, fall back to the lenient HTML parser when the text is
+    // not valid XML. Some "interesting" projects put control characters in
+    // inputs, which are illegal in XML 1.0 but tolerated by the HTML parser.
+    var htmlDom = oParser.parseFromString(text, 'text/html');
+    if (htmlDom && htmlDom.body.firstChild &&
+        htmlDom.body.firstChild.nodeName.toLowerCase() == 'xml') {
+      return htmlDom.body.firstChild;
+    }
     // Whatever we got back from the parser is not XML.
     goog.asserts.fail('Blockly.Xml.textToDom did not obtain a valid XML tree.');
   }

@@ -1129,6 +1129,7 @@ Blockly.WorkspaceSvg.prototype.paste = function(xmlBlock) {
 Blockly.WorkspaceSvg.prototype.pasteBlock_ = function(xmlBlock) {
   Blockly.Events.disable();
   try {
+    Blockly.scratchBlocksUtils.changeCopiedBlockIds(xmlBlock);
     var block = Blockly.Xml.domToBlock(xmlBlock, this);
     // Scratch-specific: Give shadow dom new IDs to prevent duplicating on paste
     Blockly.scratchBlocksUtils.changeObscuredShadowIds(block);
