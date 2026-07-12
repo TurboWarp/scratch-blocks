@@ -73,6 +73,23 @@ Blockly.scratchBlocksUtils.changeObscuredShadowIds = function(block) {
 };
 
 /**
+ * Recursively assign fresh IDs to blocks, in-place.
+ * @param {Element} xmlBlock The root XML
+ */
+Blockly.scratchBlocksUtils.changeCopiedBlockIds = function(xmlBlock) {
+  var tagName = xmlBlock.tagName && xmlBlock.tagName.toLowerCase();
+  if (tagName === 'block' || tagName === 'shadow') {
+    xmlBlock.setAttribute('id', Blockly.utils.genUid());
+  }
+  for (var i = 0; i < xmlBlock.childNodes.length; i++) {
+    var child = xmlBlock.childNodes[i];
+    if (child.nodeType === 1) {
+      Blockly.scratchBlocksUtils.changeCopiedBlockIds(child);
+    }
+  }
+};
+
+/**
  * Whether a block is both a shadow block and an argument reporter.  These
  * blocks have special behaviour in scratch-blocks: they're duplicated when
  * dragged, and they are rendered slightly differently from normal shadow
