@@ -43,6 +43,12 @@ Blockly.Colours = {
     "tertiary": "#BD42BD",
     "quaternary": "#BD42BD"
   },
+  "assets": {
+    "primary": "#FCB103",
+    "secondary": "#DB9A37",
+    "tertiary": "#DB8937",
+    "quaternary": "#DB8937"
+  },
   "control": {
     "primary": "#FFAB19",
     "secondary": "#EC9C13",
@@ -87,6 +93,19 @@ Blockly.Colours = {
     "tertiary": "#E64D00",
     "quaternary": "#E64D00"
   },
+  // Same reasoning as data_lists, but this is to differentiate tables
+  "data_tables": {
+    "primary": "#66BD5C",
+    "secondary": "#5CAA53",
+    "tertiary": "#52974A",
+    "quaternary": "#52974A"
+  },
+  "json": {
+    "primary": "#5755D4",
+    "secondary": "#4644AA",
+    "tertiary": "#4644AA",
+    "quaternary": "#4644AA"
+  },
   "more": {
     "primary": "#FF6680",
     "secondary": "#FF4D6A",
@@ -125,6 +144,9 @@ Blockly.Colours = {
   "valueReportBackground": "#FFFFFF",
   "valueReportBorder": "#AAAAAA",
   "valueReportForeground": "#000000",
+  "errorReportBackground": "#FFEEEE",
+  "errorReportBorder": "#FF4444",
+  "errorReportForeground": "#441111",
   "menuHover": "rgba(0, 0, 0, 0.2)",
   "contextMenuBackground": "#ffffff",
   "contextMenuBorder": "#cccccc",

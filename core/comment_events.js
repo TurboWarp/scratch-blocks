@@ -199,6 +199,9 @@ Blockly.Events.CommentChange.prototype.run = function(forward) {
   if (contents.hasOwnProperty('text')) {
     comment.setText(contents.text);
   }
+  if (contents.hasOwnProperty('colour')) {
+    comment.setColour(contents.colour);
+  }
 };
 
 /**
@@ -248,6 +251,12 @@ Blockly.Events.CommentCreate = function(comment) {
    */
   this.minimized = comment.isMinimized() || false;
 
+  /**
+   * Contains the color of the comment, if there was one set.
+   * @type {string}
+   */
+  this.colour = comment.colour_ || null;
+
   this.xml = comment.toXmlWithXY();
 };
 goog.inherits(Blockly.Events.CommentCreate, Blockly.Events.CommentBase);
@@ -289,7 +298,8 @@ Blockly.Events.CommentCreate.prototype.run = function(forward) {
     if (this.blockId) {
       var block = workspace.getBlockById(this.blockId);
       if (block) {
-        block.setCommentText('', this.commentId, this.xy.x, this.xy.y, this.minimized);
+        block.setCommentText('', this.commentId, this.xy.x, this.xy.y,
+            this.minimized, this.colour);
       }
     } else {
       var xml = goog.dom.createDom('xml');
@@ -321,6 +331,7 @@ Blockly.Events.CommentDelete = function(comment) {
   Blockly.Events.CommentDelete.superClass_.constructor.call(this, comment);
   this.xy = comment.getXY();
   this.minimized = comment.isMinimized() || false;
+  this.colour = comment.colour_ || null;
   this.text = comment.getText();
   var hw = comment.getHeightWidth();
   this.height = hw.height;
@@ -372,7 +383,8 @@ Blockly.Events.CommentDelete.prototype.run = function(forward) {
     var workspace = this.getEventWorkspace_();
     if (this.blockId) {
       var block = workspace.getBlockById(this.blockId);
-      block.setCommentText(this.text, this.commentId, this.xy.x, this.xy.y, this.minimized);
+      block.setCommentText(this.text, this.commentId, this.xy.x, this.xy.y,
+          this.minimized, this.colour);
       block.comment.setSize(this.width, this.height);
     } else {
       var xml = goog.dom.createDom('xml');

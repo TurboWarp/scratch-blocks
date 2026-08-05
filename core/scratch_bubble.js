@@ -26,6 +26,7 @@
 
 goog.provide('Blockly.ScratchBubble');
 
+goog.require('Blockly.SystemColourPicker');
 goog.require('Blockly.Touch');
 goog.require('Blockly.Workspace');
 goog.require('goog.dom');
@@ -98,6 +99,11 @@ Blockly.ScratchBubble = function(comment, workspace, content, anchorXY,
         this.deleteIcon_, 'mouseout', this, this.deleteMouseOut_, true);
     Blockly.bindEventWithChecks_(
         this.deleteIcon_, 'mouseup', this, this.deleteMouseUp_, true);
+    var bubble = this;
+    this.colourControl_ = Blockly.SystemColourPicker.attach(this.colourIcon_,
+        function() { return bubble.comment.getColour(); }, function(colour) {
+          if (bubble.colourCallback_) bubble.colourCallback_(colour);
+        });
     Blockly.bindEventWithChecks_(
         this.commentTopBar_, 'mousedown', this, this.bubbleMouseDown_);
     Blockly.bindEventWithChecks_(
@@ -270,6 +276,12 @@ Blockly.ScratchBubble.prototype.createTopBarIcons_ = function() {
       }, this.bubbleGroup_);
   this.deleteIcon_.setAttributeNS('http://www.w3.org/1999/xlink',
       'xlink:href', Blockly.mainWorkspace.options.pathToMedia + 'delete-x.svg');
+  this.colourIcon_ = Blockly.utils.createSvgElement('image',
+      {'class': 'scratchCommentButton', 'x': xInset,
+        'y': topBarMiddleY - 10, 'width': 20, 'height': 20},
+      this.bubbleGroup_);
+  this.colourIcon_.setAttributeNS('http://www.w3.org/1999/xlink',
+      'xlink:href', Blockly.mainWorkspace.options.pathToMedia + 'paintbrush.svg');
 };
 
 /**
@@ -518,6 +530,10 @@ Blockly.ScratchBubble.prototype.registerDeleteEvent = function(callback) {
   this.deleteCallback_ = callback;
 };
 
+Blockly.ScratchBubble.prototype.registerColourEvent = function(callback) {
+  this.colourCallback_ = callback;
+};
+
 /**
  * Register a function as a callback to show the context menu for this comment.
  * @param {!Function} callback The function to call on resize.
@@ -575,10 +591,14 @@ Blockly.ScratchBubble.prototype.setBubbleSize = function(width, height) {
     this.minimizeArrow_.setAttribute('x', width -
         (Blockly.ScratchBubble.MINIMIZE_ICON_SIZE) -
         Blockly.ScratchBubble.TOP_BAR_ICON_INSET);
+    this.colourIcon_.setAttribute('x', 38);
+    if (this.colourControl_) this.colourControl_.setAttribute('x', 38);
   } else {
     this.deleteIcon_.setAttribute('x', width -
         Blockly.ScratchBubble.DELETE_ICON_SIZE -
         Blockly.ScratchBubble.TOP_BAR_ICON_INSET);
+    this.colourIcon_.setAttribute('x', width - 58);
+    if (this.colourControl_) this.colourControl_.setAttribute('x', width - 58);
   }
   if (this.resizeGroup_) {
     var resizeSize = Blockly.ScratchBubble.RESIZE_SIZE;
@@ -641,11 +661,17 @@ Blockly.ScratchBubble.prototype.renderArrow_ = function() {
 /**
  * Change the colour of a bubble.
  * @param {string} hexColour Hex code of colour.
+ * @param {string=} fillColour Optional custom fill colour.
  * @package
  */
-Blockly.ScratchBubble.prototype.setColour = function(hexColour) {
+Blockly.ScratchBubble.prototype.setColour = function(hexColour, fillColour) {
   this.bubbleBack_.setAttribute('stroke', hexColour);
   this.bubbleArrow_.setAttribute('stroke', hexColour);
+  this.bubbleBack_.style.fill = fillColour || '';
+  this.commentEditor_.firstChild.style.backgroundColor = fillColour || '';
+  var textColour = Blockly.SystemColourPicker.isDark(fillColour) ? '#ffffff' : '';
+  this.commentEditor_.firstChild.firstChild.style.color = textColour;
+  this.topBarLabel_.style.fill = textColour;
 };
 
 /**

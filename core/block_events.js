@@ -191,6 +191,9 @@ Blockly.Events.Change.prototype.run = function(forward) {
     case 'inline':
       block.setInputsInline(value);
       break;
+    case 'shadow':
+      block.setShadow(value);
+      break;
     case 'mutation':
       var oldMutation = '';
       if (block.mutationToDom) {
@@ -455,6 +458,9 @@ Blockly.Events.Move.prototype.currentLocation_ = function() {
   var workspace = Blockly.Workspace.getById(this.workspaceId);
   var block = workspace.getBlockById(this.blockId);
   var location = {};
+  if (!block) {
+    return location;
+  }
   var parent = block.getParent();
   if (parent) {
     location.parentId = parent.id;

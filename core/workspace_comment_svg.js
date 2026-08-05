@@ -41,11 +41,12 @@ goog.require('Blockly.WorkspaceComment');
  * @param {boolean} minimized Whether this comment is minimized.
  * @param {string=} opt_id Optional ID.  Use this ID if provided, otherwise
  *     create a new ID.
+ * @param {string=} opt_colour Optional custom colour.
  * @extends {Blockly.WorkspaceComment}
  * @constructor
  */
 Blockly.WorkspaceCommentSvg = function(workspace, content, height, width, minimized,
-    opt_id) {
+    opt_id, opt_colour) {
   // Create core elements for the block.
   /**
    * @type {SVGElement}
@@ -84,7 +85,7 @@ Blockly.WorkspaceCommentSvg = function(workspace, content, height, width, minimi
       Blockly.utils.is3dSupported() && !!workspace.blockDragSurface_;
 
   Blockly.WorkspaceCommentSvg.superClass_.constructor.call(this,
-      workspace, content, height, width, minimized, opt_id);
+      workspace, content, height, width, minimized, opt_id, opt_colour);
 
   this.render();
 }; goog.inherits(Blockly.WorkspaceCommentSvg, Blockly.WorkspaceComment);
@@ -563,7 +564,7 @@ Blockly.WorkspaceCommentSvg.fromXml = function(xmlComment, workspace,
     var info = Blockly.WorkspaceComment.parseAttributes(xmlComment);
 
     var comment = new Blockly.WorkspaceCommentSvg(workspace,
-        info.content, info.h, info.w, info.minimized, info.id);
+        info.content, info.h, info.w, info.minimized, info.id, info.colour);
     if (workspace.rendered) {
       comment.initSvg();
       comment.render(false);

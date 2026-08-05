@@ -97,6 +97,22 @@ Blockly.FieldTextInput.TEXT_MEASURE_PADDING_MAGIC = 45;
 Blockly.FieldTextInput.htmlInput_ = null;
 
 /**
+ * Select caret asset for text menus based on native theme mode.
+ * In default mode, keep the original text-dropdown caret.
+ * In non-default modes, use the regular dropdown caret.
+ *
+ * This is a bit hacky, but it works
+ * @returns {string} Relative media file name.
+ * @package
+ */
+Blockly.FieldTextInput.getTextMenuArrowAsset = function() {
+  var textField = String(Blockly.Colours.textField || '').trim().toLowerCase();
+  var textFieldText = String(Blockly.Colours.textFieldText || '').trim().toLowerCase();
+  var defaultTheme = textField === '#ffffff' && textFieldText === '#575e75';
+  return defaultTheme ? 'dropdown-arrow-dark.svg' : 'dropdown-arrow.svg';
+};
+
+/**
  * Mouse cursor style when over the hotspot that initiates the editor.
  */
 Blockly.FieldTextInput.prototype.CURSOR = 'text';
@@ -132,7 +148,7 @@ Blockly.FieldTextInput.prototype.init = function() {
           'y': 0,
           'width': this.size_.width,
           'height': this.size_.height,
-          'fill': this.sourceBlock_.getColourTertiary()
+          'fill': this.sourceBlock_.getColourSecondary()
         }
     );
     this.fieldGroup_.insertBefore(this.box_, this.textElement_);
@@ -248,7 +264,8 @@ Blockly.FieldTextInput.prototype.showEditor_ = function(
     var dropDownArrow =
         goog.dom.createDom(goog.dom.TagName.IMG, 'blocklyTextDropDownArrow');
     dropDownArrow.setAttribute('src',
-        Blockly.mainWorkspace.options.pathToMedia + 'dropdown-arrow-dark.svg');
+        Blockly.mainWorkspace.options.pathToMedia +
+      Blockly.FieldTextInput.getTextMenuArrowAsset());
     dropDownArrow.style.width = this.arrowSize_ + 'px';
     dropDownArrow.style.height = this.arrowSize_ + 'px';
     dropDownArrow.style.top = this.arrowY_ + 'px';
@@ -447,6 +464,9 @@ Blockly.FieldTextInput.prototype.onHtmlInputChange_ = function(e) {
     this.sourceBlock_.render();
   }
   this.resizeEditor_();
+  if (this.sourceBlock_ && this.sourceBlock_.workspace.scheduleGroupFit) {
+    this.sourceBlock_.workspace.scheduleGroupFit(this.sourceBlock_);
+  }
 };
 
 /**
@@ -478,7 +498,12 @@ Blockly.FieldTextInput.prototype.resizeEditor_ = function() {
 
   var initialWidth;
   if (this.sourceBlock_.isShadow()) {
-    initialWidth = this.sourceBlock_.getHeightWidth().width * scale;
+    if (this.sourceBlock_.type == 'argument_editor_statement') {
+      initialWidth = (this.size_.width +
+          2 * Blockly.BlockSvg.SEP_SPACE_X) * scale;
+    } else {
+      initialWidth = this.sourceBlock_.getHeightWidth().width * scale;
+    }
   } else {
     initialWidth = this.size_.width * scale;
   }

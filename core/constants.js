@@ -243,16 +243,22 @@ Blockly.TOOLBOX_AT_RIGHT = 3;
 Blockly.OUTPUT_SHAPE_HEXAGONAL = 1;
 
 /**
- * ENUM for output shape: rounded (numbers).
+ * ENUM for output shape: rounded (strings and numbers).
  * @const
  */
 Blockly.OUTPUT_SHAPE_ROUND = 2;
 
 /**
- * ENUM for output shape: squared (any/all values; strings).
+ * ENUM for output shape: squared (arrays).
  * @const
  */
 Blockly.OUTPUT_SHAPE_SQUARE = 3;
+
+/**
+ * ENUM for output shape: object (objects).
+ * @type {number}
+ */
+Blockly.OUTPUT_SHAPE_OBJECT = 4;
 
 /**
  * ENUM for categories.
@@ -262,9 +268,12 @@ Blockly.Categories = {
   "motion": "motion",
   "looks": "looks",
   "sound": "sounds",
+  "assets": "assets",
   "pen": "pen",
   "data": "data",
   "dataLists": "data-lists",
+  "dataTables": "data-tables",
+  "json": "json",
   "event": "events",
   "control": "control",
   "sensing": "sensing",
@@ -334,12 +343,29 @@ Blockly.DELETE_VARIABLE_ID = 'DELETE_VARIABLE_ID';
 Blockly.NEW_BROADCAST_MESSAGE_ID = 'NEW_BROADCAST_MESSAGE_ID';
 
 /**
+ * String for use in the dropdown created in field_variable,
+ * specifically for scalar/list/table variables.
+ * This string indicates that this option in the dropdown is a create action
+ * and if selected, should trigger the prompt to create a new variable.
+ * @const {string}
+ */
+Blockly.NEW_VARIABLE_OPTION_ID = 'NEW_VARIABLE_OPTION_ID';
+
+/**
  * String representing the variable type of broadcast message blocks.
  * This string, for use in differentiating between types of variables,
  * indicates that the current variable is a broadcast message.
  * @const {string}
  */
 Blockly.BROADCAST_MESSAGE_VARIABLE_TYPE = 'broadcast_msg';
+
+/**
+ * String representing the variable type of table blocks.
+ * This string, for use in differentiating between types of variables,
+ * indicates that the current variable is a table.
+ * @const {string}
+ */
+Blockly.TABLE_VARIABLE_TYPE = 'table';
 
 /**
  * String representing the variable type of list blocks.
@@ -393,10 +419,26 @@ Blockly.PROCEDURES_CALL_TYPE_REPORTER = 1;
 Blockly.PROCEDURES_CALL_TYPE_BOOLEAN = 2;
 
 /**
+ * Enum for procedure call objects.
+ */
+Blockly.PROCEDURES_CALL_TYPE_OBJECT = 3;
+
+/**
+ * Enum for procedure call arrays.
+ */
+Blockly.PROCEDURES_CALL_TYPE_ARRAY = 4;
+
+/**
  * The type of all procedure return blocks.
  * @const {string}
  */
 Blockly.PROCEDURES_RETURN_BLOCK_TYPE = 'procedures_return';
+
+/**
+ * The type of all procedure set parameter blocks.
+ * @const {string}
+ */
+Blockly.PROCEDURES_SET_PARAM_BLOCK_TYPE = 'procedures_set_param';
 
 /**
  * ENUM for flyout status button states.

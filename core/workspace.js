@@ -26,8 +26,10 @@
 
 goog.provide('Blockly.Workspace');
 
+goog.require('Blockly.ProceduresMap');
 goog.require('Blockly.VariableMap');
 goog.require('Blockly.WorkspaceComment');
+goog.require('Blockly.Group');
 goog.require('goog.array');
 goog.require('goog.math');
 
@@ -67,6 +69,11 @@ Blockly.Workspace = function(opt_options) {
    */
   this.commentDB_ = Object.create(null);
   /**
+   * @type {!Object<string, !Blockly.Group>}
+   * @private
+   */
+  this.groupDB_ = Object.create(null);
+  /**
    * @type {!Array.<!Function>}
    * @private
    */
@@ -101,6 +108,13 @@ Blockly.Workspace = function(opt_options) {
    * @private
    */
   this.variableMap_ = new Blockly.VariableMap(this);
+
+  /**
+   * A map of global procedure mutations available from other targets.
+   * @type {!Blockly.ProceduresMap}
+   * @private
+   */
+  this.globalProcedureMap_ = new Blockly.ProceduresMap(this);
 
   /**
    * Blocks in the flyout can refer to variables that don't exist in the main
@@ -222,6 +236,74 @@ Blockly.Workspace.prototype.addTopComment = function(comment) {
 };
 
 /**
+ * @param {!Blockly.Group} group Group to register.
+ */
+Blockly.Workspace.prototype.addGroup = function(group) {
+  this.groupDB_[group.id] = group;
+};
+
+/**
+ * @param {!Blockly.Group} group Group to unregister.
+ */
+Blockly.Workspace.prototype.removeGroup = function(group) {
+  delete this.groupDB_[group.id];
+};
+
+/**
+ * @return {!Array<!Blockly.Group>} All groups.
+ */
+Blockly.Workspace.prototype.getGroups = function() {
+  var db = this.groupDB_;
+  return Object.keys(db).map(function(id) { return db[id]; });
+};
+
+/**
+ * @param {string} id Group ID.
+ * @return {?Blockly.Group} Matching group.
+ */
+Blockly.Workspace.prototype.getGroupById = function(id) {
+  return this.groupDB_[id] || null;
+};
+
+/**
+ * Find the group which owns a top-level block.
+ * @param {string} blockId Block ID.
+ * @param {Blockly.Group=} opt_exclude Group to ignore while looking.
+ * @return {?Blockly.Group} Owning group, if any.
+ */
+Blockly.Workspace.prototype.getGroupForBlock = function(blockId, opt_exclude) {
+  var groups = this.getGroups();
+  var block = this.getBlockById(blockId);
+  for (var i = 0; i < groups.length; i++) {
+    var group = groups[i];
+    if (group === opt_exclude || group.blockIds.indexOf(blockId) === -1) continue;
+    if (!block || group.collapsed || group.containsBlock(block)) return group;
+
+    // Expanded groups release blocks which have been dragged out. Remove the
+    // stale ID immediately so another group can adopt and serialize the block.
+    group.blockIds.splice(group.blockIds.indexOf(blockId), 1);
+  }
+  return null;
+};
+
+/**
+ * Remeasure the group which owns a block after a live field edit.
+ * This deliberately checks the saved ownership directly: using
+ * getGroupForBlock here could release a stack while its group is growing.
+ * @param {!Blockly.Block} block Block whose rendered size changed.
+ */
+Blockly.Workspace.prototype.scheduleGroupFit = function(block) {
+  var root = block.getRootBlock();
+  var groups = this.getGroups();
+  for (var i = 0; i < groups.length; i++) {
+    if (groups[i].blockIds.indexOf(root.id) !== -1) {
+      groups[i].onWorkspaceChange_();
+      return;
+    }
+  }
+};
+
+/**
  * Remove a comment from the list of top comments.
  * @param {!Blockly.WorkspaceComment} comment comment to remove.
  * @package
@@ -293,6 +375,7 @@ Blockly.Workspace.prototype.getAllBlocks = function(ordered) {
  */
 Blockly.Workspace.prototype.clear = function() {
   this.isClearing = true;
+  this.getGroups().forEach(function(group) { group.dispose(false); });
   var existingGroup = Blockly.Events.getGroup();
   if (!existingGroup) {
     Blockly.Events.setGroup(true);
@@ -317,7 +400,37 @@ Blockly.Workspace.prototype.clear = function() {
   if (this.potentialVariableMap_) {
     this.potentialVariableMap_.clear();
   }
+  if (this.globalProcedureMap_) {
+    this.globalProcedureMap_.clear();
+  }
   this.isClearing = false;
+};
+
+/**
+ * Track a global procedure mutation on this workspace.
+ * @param {!Element} mutation Procedure mutation XML.
+ */
+Blockly.Workspace.prototype.createGlobalProcedure = function(mutation) {
+  this.globalProcedureMap_.createProcedureMutation(mutation);
+};
+
+/**
+ * Get all globally scoped procedure mutations available to this workspace.
+ * @return {!Array<!Element>} Mutation XML elements.
+ */
+Blockly.Workspace.prototype.getAllGlobalProcedureMutations = function() {
+  this.globalProcedureMap_.refreshFromVM();
+  return this.globalProcedureMap_.getAllProcedureMutations();
+};
+
+/**
+ * Get a global procedure mutation by proccode.
+ * @param {string} proccode Procedure identifier.
+ * @return {?Element} Mutation XML element if found.
+ */
+Blockly.Workspace.prototype.getGlobalProcedureMutationByProccode = function(proccode) {
+  this.globalProcedureMap_.refreshFromVM();
+  return this.globalProcedureMap_.getProcedureMutationByProccode(proccode);
 };
 
 /* Begin functions that are just pass-throughs to the variable map. */
@@ -376,6 +489,15 @@ Blockly.Workspace.prototype.deleteVariableById = function(id) {
  */
 Blockly.Workspace.prototype.deleteVariableInternal_ = function(variable, uses) {
   this.variableMap_.deleteVariableInternal_(variable, uses);
+};
+
+/**
+ * Replace all uses of one variable with another existing variable.
+ * @param {string} oldId ID of the variable to replace.
+ * @param {string} newId ID of the variable to replace with.
+ */
+Blockly.Workspace.prototype.replaceVariableById = function(oldId, newId) {
+  this.variableMap_.replaceVariableById(oldId, newId);
 };
 
 /**
@@ -533,6 +655,7 @@ Blockly.Workspace.prototype.hasRedoStack = function() {
 Blockly.Workspace.prototype.hasUndoStack = function() {
   return this.undoStack_.length != 0;
 };
+
 /**
  * When something in this workspace changes, call a function.
  * @param {!Function} func Function to call.

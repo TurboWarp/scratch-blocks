@@ -153,6 +153,13 @@ Blockly.Field.prototype.text_ = '';
 Blockly.Field.prototype.sourceBlock_ = null;
 
 /**
+ * Input this field is attached to.  Starts as null, then in set in init.
+ * @type {Blockly.Input}
+ * @private
+ */
+Blockly.Field.prototype.sourceInput_ = null;
+
+/**
  * Is the field visible, or hidden due to the block being collapsed?
  * @type {boolean}
  * @private
@@ -209,12 +216,28 @@ Blockly.Field.prototype.EDITABLE = true;
 Blockly.Field.prototype.SERIALIZABLE = true;
 
 /**
+ * If true, this field will be serialized in reverse (in case fields before this one depend on this field's value).
+ * @type {boolean}
+ * @public
+ */
+Blockly.Field.prototype.REVERSE_SERIALIZE = false;
+
+/**
  * Attach this field to a block.
  * @param {!Blockly.Block} block The block containing this field.
  */
 Blockly.Field.prototype.setSourceBlock = function(block) {
   goog.asserts.assert(!this.sourceBlock_, 'Field already bound to a block.');
   this.sourceBlock_ = block;
+};
+
+/**
+ * Attach this field to an input.
+ * @param {!Blockly.Input} input The input containing this field.
+ */
+Blockly.Field.prototype.setSourceInput = function(input) {
+  goog.asserts.assert(!this.sourceInput_, 'Field already bound to an input.');
+  this.sourceInput_ = input;
 };
 
 /**
@@ -269,6 +292,16 @@ Blockly.Field.prototype.init = function() {
  */
 Blockly.Field.prototype.initModel = function() {
 };
+
+/**
+ * Initialization code to run right after the field is added to an input.
+ * No-op by default.
+ * @param {!Blockly.Input} _input The input the field was added into.
+ * @param {!Blockly.Block} _block The block the field was added into.
+ */
+Blockly.Field.prototype.insertedInto = function(_input, _block) {
+};
+
 
 /**
  * Dispose of all DOM objects belonging to this editable field.
@@ -467,6 +500,10 @@ Blockly.Field.prototype.render_ = function() {
   if (this.box_) {
     this.box_.setAttribute('width', this.size_.width);
     this.box_.setAttribute('height', this.size_.height);
+  }
+  // Update the hit area for dropdown-only blocks.
+  if (this.hitArea_) {
+    this.hitArea_.setAttribute('width', this.size_.width);
   }
 };
 
@@ -781,7 +818,7 @@ Blockly.Field.prototype.getClickTarget_ = function() {
   for (var i = 0, input; input = this.sourceBlock_.inputList[i]; i++) {
     nFields += input.fieldRow.length;
   }
-  if (nFields <= 1 && this.sourceBlock_.outputConnection) {
+  if (nFields <= 1 && this.sourceBlock_.outputConnection && !(this instanceof Blockly.FieldDropdown)) {
     return this.sourceBlock_.getSvgRoot();
   } else {
     return this.getSvgRoot();

@@ -46,9 +46,11 @@ Blockly.Blocks['data_variable'] = {
           "variableType": ""
         }
       ],
+      "output": null,
       "category": Blockly.Categories.data,
       "checkboxInFlyout": true,
-      "extensions": ["contextMenu_getVariableBlock", "colours_data", "output_string"]
+      "extensions": ["contextMenu_getVariableBlock", "colours_data"],
+      "outputShape": Blockly.OUTPUT_SHAPE_ROUND
     });
   }
 };
@@ -72,6 +74,7 @@ Blockly.Blocks['data_setvariableto'] = {
         }
       ],
       "category": Blockly.Categories.data,
+      "switches": ["data_changevariableby"],
       "extensions": ["colours_data", "shape_statement"]
     });
   }
@@ -96,6 +99,7 @@ Blockly.Blocks['data_changevariableby'] = {
         }
       ],
       "category": Blockly.Categories.data,
+      "switches": ["data_setvariableto"],
       "extensions": ["colours_data", "shape_statement"]
     });
   }
@@ -118,6 +122,7 @@ Blockly.Blocks['data_showvariable'] = {
       "previousStatement": null,
       "nextStatement": null,
       "category": Blockly.Categories.data,
+      "switches": ["data_hidevariable"],
       "extensions": ["colours_data"]
     });
   }
@@ -140,6 +145,7 @@ Blockly.Blocks['data_hidevariable'] = {
       "previousStatement": null,
       "nextStatement": null,
       "category": Blockly.Categories.data,
+      "switches": ["data_showvariable"],
       "extensions": ["colours_data"]
     });
   }
@@ -214,6 +220,35 @@ Blockly.Blocks['data_listindexrandom'] = {
           "options": [
             ["1", "1"],
             [Blockly.Msg.DATA_INDEX_LAST, "last"],
+            [Blockly.Msg.DATA_INDEX_RANDOM, "random"]
+          ]
+        }
+      ],
+      "category": Blockly.Categories.data,
+      "extensions": ["colours_textfield", "output_string"]
+    });
+  }
+};
+
+Blockly.Blocks['data_listindex'] = {
+  /**
+   * List index menu, with all secret options.
+   * @this Blockly.Block
+   */
+  init: function() {
+    this.jsonInit({
+      "message0": "%1",
+      "args0": [
+        {
+          "type": "field_numberdropdown",
+          "name": "INDEX",
+          "value": "1",
+          "min": 1,
+          "precision": 1,
+          "options": [
+            ["1", "1"],
+            [Blockly.Msg.DATA_INDEX_LAST, "last"],
+            [Blockly.Msg.DATA_INDEX_ALL, "all"],
             [Blockly.Msg.DATA_INDEX_RANDOM, "random"]
           ]
         }
@@ -453,6 +488,53 @@ Blockly.Blocks['data_listcontainsitem'] = {
   }
 };
 
+Blockly.Blocks['data_listasarray'] = {
+  /**
+   * Block for turning list into array.
+   * @this Blockly.Block
+   */
+  init: function() {
+    this.jsonInit({
+      "message0": Blockly.Msg.DATA_LISTASARRAY,
+      "args0": [
+        {
+          "type": "field_variable",
+          "name": "LIST",
+          "variableTypes": [Blockly.LIST_VARIABLE_TYPE]
+        }
+      ],
+      "category": Blockly.Categories.dataLists,
+      "extensions": ["colours_data_lists", "output_array"]
+    });
+  }
+};
+
+Blockly.Blocks['data_setlistarray'] = {
+  /**
+   * Block to set a list to array.
+   * @this Blockly.Block
+   */
+  init: function() {
+    this.jsonInit({
+      "message0": Blockly.Msg.DATA_SETLISTARRAY,
+      "args0": [
+        {
+          "type": "field_variable",
+          "name": "LIST",
+          "variableTypes": [Blockly.LIST_VARIABLE_TYPE]
+        },
+        {
+          "type": "input_value",
+          "name": "ARRAY",
+          "check": "Array"
+        },
+      ],
+      "category": Blockly.Categories.dataLists,
+      "extensions": ["colours_data_lists", "shape_statement"]
+    });
+  }
+};
+
 Blockly.Blocks['data_showlist'] = {
   /**
    * Block to show a list.
@@ -469,6 +551,7 @@ Blockly.Blocks['data_showlist'] = {
         }
       ],
       "category": Blockly.Categories.dataLists,
+      "switches": ["data_hidelist"],
       "extensions": ["colours_data_lists", "shape_statement"]
     });
   }
@@ -490,7 +573,459 @@ Blockly.Blocks['data_hidelist'] = {
         }
       ],
       "category": Blockly.Categories.dataLists,
+      "switches": ["data_showlist"],
       "extensions": ["colours_data_lists", "shape_statement"]
+    });
+  }
+};
+
+Blockly.Blocks['data_tablecontents'] = {
+  /**
+   * Table reporter.
+   * @this Blockly.Block
+   */
+  init: function() {
+    this.jsonInit({
+      "message0": "%1",
+      "args0": [
+        {
+          "type": "field_variable_getter",
+          "text": "",
+          "name": "TABLE",
+          "variableType": Blockly.TABLE_VARIABLE_TYPE
+        }
+      ],
+      "category": Blockly.Categories.dataTables,
+      "extensions": ["contextMenu_getTableBlock", "colours_data_tables", "output_string"],
+      "checkboxInFlyout": true
+    });
+  }
+};
+
+Blockly.Blocks['data_addtotable'] = {
+  /**
+   * Block to add a new column or row to a table.
+   * @this Blockly.Block
+   */
+  init: function() {
+    this.jsonInit({
+      "message0": Blockly.Msg.DATA_ADDTOTABLE,
+      "args0": [
+        {
+          "type": "field_dropdown",
+          "name": "DIMENSION",
+          "options": [
+            [Blockly.Msg.DATA_COLUMN, 'column'],
+            [Blockly.Msg.DATA_ROW, 'row']
+          ]
+        },
+        {
+          "type": "field_variable",
+          "name": "TABLE",
+          "variableTypes": [Blockly.TABLE_VARIABLE_TYPE]
+        }
+      ],
+      "category": Blockly.Categories.dataTables,
+      "extensions": ["colours_data_tables", "shape_statement"]
+    });
+  }
+};
+
+Blockly.Blocks['data_insertdimensiontotable'] = {
+  /**
+   * Block to insert a new column or row to a table at the specified index.
+   * @this Blockly.Block
+   */
+  init: function() {
+    this.jsonInit({
+      "message0": Blockly.Msg.DATA_INSERTDIMENSIONTOTABLE,
+      "args0": [
+        {
+          "type": "field_dropdown",
+          "name": "DIMENSION",
+          "options": [
+            [Blockly.Msg.DATA_COLUMN, 'column'],
+            [Blockly.Msg.DATA_ROW, 'row']
+          ]
+        },
+        {
+          "type": "input_value",
+          "name": "INDEX"
+        },
+        {
+          "type": "field_variable",
+          "name": "TABLE",
+          "variableTypes": [Blockly.TABLE_VARIABLE_TYPE]
+        }
+      ],
+      "category": Blockly.Categories.dataTables,
+      "extensions": ["colours_data_tables", "shape_statement"]
+    });
+  }
+};
+
+Blockly.Blocks['data_setcellintable'] = {
+  /**
+   * Block to set a new item in a cell in a table.
+   * @this Blockly.Block
+   */
+  init: function() {
+    this.jsonInit({
+      "message0": Blockly.Msg.DATA_SETCELLINTABLE,
+      "args0": [
+        {
+          "type": "input_value",
+          "name": "COLUMN"
+        },
+        {
+          "type": "input_value",
+          "name": "ROW"
+        },
+        {
+          "type": "field_variable",
+          "name": "TABLE",
+          "variableTypes": [Blockly.TABLE_VARIABLE_TYPE]
+        },
+        {
+          "type": "input_value",
+          "name": "ITEM"
+        }
+      ],
+      "category": Blockly.Categories.dataTables,
+      "extensions": ["colours_data_tables", "shape_statement"]
+    });
+  }
+};
+
+Blockly.Blocks['data_deletecellintable'] = {
+  /**
+   * Block to delete an item in a cell in a table.
+   * @this Blockly.Block
+   */
+  init: function() {
+    this.jsonInit({
+      "message0": Blockly.Msg.DATA_DELETECELLINTABLE,
+      "args0": [
+        {
+          "type": "input_value",
+          "name": "COLUMN"
+        },
+        {
+          "type": "input_value",
+          "name": "ROW"
+        },
+        {
+          "type": "field_variable",
+          "name": "TABLE",
+          "variableTypes": [Blockly.TABLE_VARIABLE_TYPE]
+        }
+      ],
+      "category": Blockly.Categories.dataTables,
+      "extensions": ["colours_data_tables", "shape_statement"]
+    });
+  }
+};
+
+Blockly.Blocks['data_deletedimensionintable'] = {
+  /**
+   * Block to delete a column or row in a cell in a table.
+   * @this Blockly.Block
+   */
+  init: function() {
+    this.jsonInit({
+      "message0": Blockly.Msg.DATA_DELETEDIMENSIONINTABLE,
+      "args0": [
+        {
+          "type": "field_dropdown",
+          "name": "DIMENSION",
+          "options": [
+            [Blockly.Msg.DATA_COLUMN, 'column'],
+            [Blockly.Msg.DATA_ROW, 'row']
+          ]
+        },
+        {
+          "type": "input_value",
+          "name": "INDEX"
+        },
+        {
+          "type": "field_variable",
+          "name": "TABLE",
+          "variableTypes": [Blockly.TABLE_VARIABLE_TYPE]
+        }
+      ],
+      "category": Blockly.Categories.dataTables,
+      "extensions": ["colours_data_tables", "shape_statement"]
+    });
+  }
+};
+
+Blockly.Blocks['data_deletealloftable'] = {
+  /**
+   * Block to delete the entirety of a table.
+   * @this Blockly.Block
+   */
+  init: function() {
+    this.jsonInit({
+      "message0": Blockly.Msg.DATA_DELETEALLOFTABLE,
+      "args0": [
+        {
+          "type": "field_variable",
+          "name": "TABLE",
+          "variableTypes": [Blockly.TABLE_VARIABLE_TYPE]
+        }
+      ],
+      "category": Blockly.Categories.dataTables,
+      "extensions": ["colours_data_tables", "shape_statement"]
+    });
+  }
+};
+
+Blockly.Blocks['data_itemincelloftable'] = {
+  /**
+   * Block for reporting the item of a cell in a table.
+   * @this Blockly.Block
+   */
+  init: function() {
+    this.jsonInit({
+      "message0": Blockly.Msg.DATA_ITEMINCELLOFTABLE,
+      "args0": [
+        {
+          "type": "input_value",
+          "name": "COLUMN"
+        },
+        {
+          "type": "input_value",
+          "name": "ROW"
+        },
+        {
+          "type": "field_variable",
+          "name": "TABLE",
+          "variableTypes": [Blockly.TABLE_VARIABLE_TYPE]
+        }
+      ],
+      "output": null,
+      "category": Blockly.Categories.dataTables,
+      "extensions": ["colours_data_tables"],
+      "outputShape": Blockly.OUTPUT_SHAPE_ROUND
+    });
+  }
+};
+
+Blockly.Blocks['data_itemsofdimensionoftable'] = {
+  /**
+   * Block for reporting an array of all the items in a column or row of a table.
+   * @this Blockly.Block
+   */
+  init: function() {
+    this.jsonInit({
+      "message0": Blockly.Msg.DATA_ITEMSOFDIMENSIONOFTABLE,
+      "args0": [
+        {
+          "type": "field_dropdown",
+          "name": "DIMENSION",
+          "options": [
+            [Blockly.Msg.DATA_COLUMN, 'column'],
+            [Blockly.Msg.DATA_ROW, 'row']
+          ]
+        },
+        {
+          "type": "input_value",
+          "name": "INDEX"
+        },
+        {
+          "type": "field_variable",
+          "name": "TABLE",
+          "variableTypes": [Blockly.TABLE_VARIABLE_TYPE]
+        }
+      ],
+      "category": Blockly.Categories.dataTables,
+      "extensions": ["colours_data_tables", "output_array"]
+    });
+  }
+};
+
+Blockly.Blocks['data_lengthofdimensionoftable'] = {
+  /**
+   * Block for reporting the length of a column or row in a table.
+   * @this Blockly.Block
+   */
+  init: function() {
+    this.jsonInit({
+      "message0": Blockly.Msg.DATA_LENGTHOFDIMENSIONOFTABLE,
+      "args0": [
+        {
+          "type": "field_dropdown",
+          "name": "DIMENSION",
+          "options": [
+            [Blockly.Msg.DATA_COLUMN, 'column'],
+            [Blockly.Msg.DATA_ROW, 'row']
+          ]
+        },
+        {
+          "type": "input_value",
+          "name": "INDEX"
+        },
+        {
+          "type": "field_variable",
+          "name": "TABLE",
+          "variableTypes": [Blockly.TABLE_VARIABLE_TYPE]
+        }
+      ],
+      "category": Blockly.Categories.dataTables,
+      "extensions": ["colours_data_tables", "output_number"]
+    });
+  }
+};
+
+Blockly.Blocks['data_dimensioncountoftable'] = {
+  /**
+   * Block for reporting the amount of columns or rows in a table.
+   * @this Blockly.Block
+   */
+  init: function() {
+    this.jsonInit({
+      "message0": Blockly.Msg.DATA_DIMENSIONCOUNTOFTABLE,
+      "args0": [
+        {
+          "type": "field_dropdown",
+          "name": "DIMENSION",
+          "options": [
+            [Blockly.Msg.DATA_COLUMN, 'column'],
+            [Blockly.Msg.DATA_ROW, 'row']
+          ]
+        },
+        {
+          "type": "field_variable",
+          "name": "TABLE",
+          "variableTypes": [Blockly.TABLE_VARIABLE_TYPE]
+        }
+      ],
+      "category": Blockly.Categories.dataTables,
+      "extensions": ["colours_data_tables", "output_number"]
+    });
+  }
+};
+
+Blockly.Blocks['data_tablecontainsitemincell'] = {
+  /**
+   * Block to report whether the table contains an item in a cell.
+   * @this Blockly.Block
+   */
+  init: function() {
+    this.jsonInit({
+      "message0": Blockly.Msg.DATA_TABLECONTAINSITEMINCELL,
+      "args0": [
+        {
+          "type": "field_variable",
+          "name": "TABLE",
+          "variableTypes": [Blockly.TABLE_VARIABLE_TYPE]
+        },
+        {
+          "type": "input_value",
+          "name": "ITEM"
+        },
+        {
+          "type": "input_value",
+          "name": "COLUMN"
+        },
+        {
+          "type": "input_value",
+          "name": "ROW"
+        }
+      ],
+      "category": Blockly.Categories.dataTables,
+      "extensions": ["colours_data_tables", "output_boolean"]
+    });
+  }
+};
+
+Blockly.Blocks['data_tableasarray'] = {
+  /**
+   * Block for reporting the entire table as an array.
+   * @this Blockly.Block
+   */
+  init: function() {
+    this.jsonInit({
+      "message0": Blockly.Msg.DATA_TABLEASARRAY,
+      "args0": [
+        {
+          "type": "field_variable",
+          "name": "TABLE",
+          "variableTypes": [Blockly.TABLE_VARIABLE_TYPE]
+        }
+      ],
+      "category": Blockly.Categories.dataTables,
+      "extensions": ["colours_data_tables", "output_array"]
+    });
+  }
+};
+
+Blockly.Blocks['data_settableusingarray'] = {
+  /**
+   * Block to set a table using an array.
+   * @this Blockly.Block
+   */
+  init: function() {
+    this.jsonInit({
+      "message0": Blockly.Msg.DATA_SETTABLEUSINGARRAY,
+      "args0": [
+        {
+          "type": "field_variable",
+          "name": "TABLE",
+          "variableTypes": [Blockly.TABLE_VARIABLE_TYPE]
+        },
+        {
+          "type": "input_value",
+          "name": "ARR",
+          "check": "Array"
+        }
+      ],
+      "category": Blockly.Categories.dataTables,
+      "extensions": ["colours_data_tables", "shape_statement"]
+    });
+  }
+};
+
+Blockly.Blocks['data_showtable'] = {
+  /**
+   * Block to show a table.
+   * @this Blockly.Block
+   */
+  init: function() {
+    this.jsonInit({
+      "message0": Blockly.Msg.DATA_SHOWTABLE,
+      "args0": [
+        {
+          "type": "field_variable",
+          "name": "TABLE",
+          "variableTypes": [Blockly.TABLE_VARIABLE_TYPE]
+        }
+      ],
+      "category": Blockly.Categories.dataTables,
+      "switches": ["data_hidetable"],
+      "extensions": ["colours_data_tables", "shape_statement"]
+    });
+  }
+};
+
+Blockly.Blocks['data_hidetable'] = {
+  /**
+   * Block to hide a table.
+   * @this Blockly.Block
+   */
+  init: function() {
+    this.jsonInit({
+      "message0": Blockly.Msg.DATA_HIDETABLE,
+      "args0": [
+        {
+          "type": "field_variable",
+          "name": "TABLE",
+          "variableTypes": [Blockly.TABLE_VARIABLE_TYPE]
+        }
+      ],
+      "category": Blockly.Categories.dataTables,
+      "switches": ["data_showtable"],
+      "extensions": ["colours_data_tables", "shape_statement"]
     });
   }
 };
@@ -532,6 +1067,13 @@ Blockly.Constants.Data.CUSTOM_CONTEXT_MENU_GET_VARIABLE_MIXIN = {
                 variablesList[i].getId(), fieldName);
         options.push(option);
       }
+      options.push({
+        text: Blockly.Msg.REPLACE_VARIABLE,
+        enabled: true,
+        callback: Blockly.Constants.Data.REPLACE_OPTION_CALLBACK_FACTORY(
+            this, fieldName),
+        separator: true
+      });
     } else {
       var renameOption = {
         text: Blockly.Msg.RENAME_VARIABLE,
@@ -591,6 +1133,14 @@ Blockly.Constants.Data.CUSTOM_CONTEXT_MENU_GET_LIST_MIXIN = {
                 variablesList[i].getId(), fieldName);
         options.push(option);
       }
+      options.push({separator: true});
+      options.push({
+        text: Blockly.Msg.REPLACE_LIST,
+        enabled: true,
+        callback: Blockly.Constants.Data.REPLACE_OPTION_CALLBACK_FACTORY(
+            this, fieldName),
+        separator: true
+      });
     } else {
       var renameOption = {
         text: Blockly.Msg.RENAME_LIST,
@@ -611,6 +1161,72 @@ Blockly.Constants.Data.CUSTOM_CONTEXT_MENU_GET_LIST_MIXIN = {
 };
 Blockly.Extensions.registerMixin('contextMenu_getListBlock',
     Blockly.Constants.Data.CUSTOM_CONTEXT_MENU_GET_LIST_MIXIN);
+
+/**
+ * Mixin to add a context menu for a data_tablecontents block.  It adds one item for
+ * each table defined on the workspace.
+ * @mixin
+ * @augments Blockly.Block
+ * @package
+ * @readonly
+ */
+Blockly.Constants.Data.CUSTOM_CONTEXT_MENU_GET_TABLE_MIXIN = {
+  /**
+   * Add context menu option to change the selected table.
+   * @param {!Array} options List of menu options to add to.
+   * @this Blockly.Block
+   */
+  customContextMenu: function(options) {
+    var fieldName = 'TABLE';
+    if (this.isCollapsed()) {
+      return;
+    }
+    var currentVarName = this.getField(fieldName).text_;
+    if (!this.isInFlyout) {
+      var variablesList = this.workspace.getVariablesOfType('table');
+      variablesList.sort(function(a, b) {
+        return Blockly.scratchBlocksUtils.compareStrings(a.name, b.name);
+      });
+      for (var i = 0; i < variablesList.length; i++) {
+        var varName = variablesList[i].name;
+        if (varName == currentVarName) continue;
+
+        var option = {enabled: true};
+        option.text = varName;
+
+        option.callback =
+            Blockly.Constants.Data.VARIABLE_OPTION_CALLBACK_FACTORY(this,
+                variablesList[i].getId(), fieldName);
+        options.push(option);
+      }
+      options.push({separator: true});
+      options.push({
+        text: Blockly.Msg.REPLACE_TABLE,
+        enabled: true,
+        callback: Blockly.Constants.Data.REPLACE_OPTION_CALLBACK_FACTORY(
+            this, fieldName),
+        separator: true
+      });
+    } else {
+      var renameOption = {
+        text: Blockly.Msg.RENAME_TABLE,
+        enabled: true,
+        callback: Blockly.Constants.Data.RENAME_OPTION_CALLBACK_FACTORY(this,
+            fieldName)
+      };
+      var deleteOption = {
+        text: Blockly.Msg.DELETE_TABLE.replace('%1', currentVarName),
+        enabled: true,
+        callback: Blockly.Constants.Data.DELETE_OPTION_CALLBACK_FACTORY(this,
+            fieldName)
+      };
+      options.push(renameOption);
+      options.push(deleteOption);
+    }
+  }
+};
+Blockly.Extensions.registerMixin('contextMenu_getTableBlock',
+    Blockly.Constants.Data.CUSTOM_CONTEXT_MENU_GET_TABLE_MIXIN);
 
 /**
  * Callback factory for dropdown menu options associated with a variable getter
@@ -662,5 +1278,42 @@ Blockly.Constants.Data.DELETE_OPTION_CALLBACK_FACTORY = function(block,
     var workspace = block.workspace;
     var variable = block.getField(fieldName).getVariable();
     workspace.deleteVariableById(variable.getId());
+  };
+};
+
+/**
+ * Callback for replace variable dropdown menu option associated with a
+ * variable getter block.
+ * @param {!Blockly.Block} block The block with the variable to replace.
+ * @param {string} fieldName The name of the field to inspect on the block.
+ * @return {!function()} A function that replaces the variable references.
+ */
+Blockly.Constants.Data.REPLACE_OPTION_CALLBACK_FACTORY = function(block,
+    fieldName) {
+  return function() {
+    var workspace = block.workspace;
+    var variable = block.getField(fieldName).getVariable();
+    var varType = variable.type;
+    var promptMsg;
+    if (varType == Blockly.TABLE_VARIABLE_TYPE) {
+      promptMsg = Blockly.Msg.REPLACE_TABLE_TITLE;
+    } else if (varType == Blockly.LIST_VARIABLE_TYPE) {
+      promptMsg = Blockly.Msg.REPLACE_LIST_TITLE;
+    } else {
+      promptMsg = Blockly.Msg.REPLACE_VARIABLE_TITLE;
+    }
+    Blockly.prompt(promptMsg.replace('%1', variable.name), '',
+        function(newName) {
+          if (newName) {
+            var newVar = workspace.getVariable(newName, varType);
+            if (!newVar) {
+              Blockly.alert(
+                  Blockly.Msg.REPLACE_VARIABLE_DOES_NOT_EXIST.replace(
+                      '%1', newName));
+              return;
+            }
+            workspace.replaceVariableById(variable.getId(), newVar.getId());
+          }
+        });
   };
 };

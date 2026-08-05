@@ -44,9 +44,10 @@ goog.require('goog.math.Coordinate');
  * @param {string=} opt_id Optional ID.  Use this ID if provided, otherwise
  *     create a new ID.  If the ID conflicts with an in-use ID, a new one will
  *     be generated.
+ * @param {string=} opt_colour Optional custom colour.
  * @constructor
  */
-Blockly.WorkspaceComment = function(workspace, content, height, width, minimized, opt_id) {
+Blockly.WorkspaceComment = function(workspace, content, height, width, minimized, opt_id, opt_colour) {
   /** @type {string} */
   this.id = (opt_id && !workspace.getCommentById(opt_id)) ?
       opt_id : Blockly.utils.genUid();
@@ -77,10 +78,16 @@ Blockly.WorkspaceComment = function(workspace, content, height, width, minimized
 
   /**
    * The comment's minimized state.
-   * @type{boolean}
+   * @type {boolean}
    * @private
    */
   this.isMinimized_ = minimized;
+  /**
+   * The comment's set color.
+   * @type {string}
+   * @private
+   */
+  this.colour_ = opt_colour || null;
 
   /**
    * @type {!Blockly.Workspace}
@@ -277,6 +284,18 @@ Blockly.WorkspaceComment.prototype.setText = function(text) {
   }
 };
 
+Blockly.WorkspaceComment.prototype.getColour = function() {
+  return this.colour_ || '#fef49c';
+};
+
+Blockly.WorkspaceComment.prototype.setColour = function(colour) {
+  if (this.colour_ == colour) return;
+  Blockly.Events.fire(new Blockly.Events.CommentChange(
+      this, {colour: this.colour_}, {colour: colour}));
+  this.colour_ = colour;
+  if (this.rendered_) this.applyColour_();
+};
+
 /**
  * Check whether this comment is currently minimized.
  * @return {boolean} True if minimized
@@ -333,6 +352,7 @@ Blockly.WorkspaceComment.prototype.toXml = function(opt_noId) {
   if (this.isMinimized_) {
     commentElement.setAttribute('minimized', true);
   }
+  if (this.colour_) commentElement.setAttribute('colour', this.colour_);
   commentElement.textContent = this.getText();
   return commentElement;
 };
@@ -369,7 +389,7 @@ Blockly.WorkspaceComment.fromXml = function(xmlComment, workspace) {
   var info = Blockly.WorkspaceComment.parseAttributes(xmlComment);
 
   var comment = new Blockly.WorkspaceComment(
-      workspace, info.content, info.h, info.w, info.minimized, info.id);
+      workspace, info.content, info.h, info.w, info.minimized, info.id, info.colour);
 
   if (!isNaN(info.x) && !isNaN(info.y)) {
     comment.moveBy(info.x, info.y);
@@ -420,6 +440,11 @@ Blockly.WorkspaceComment.parseAttributes = function(xml) {
      * @type {boolean}
      */
     minimized: xml.getAttribute('minimized') == 'true' || false,
+    /**
+     * Contains the color the comment was set to, if it was.
+     * @type {string}
+     */
+    colour: xml.getAttribute('colour') || null,
     /* @type {string} */
     content: xml.textContent
   };

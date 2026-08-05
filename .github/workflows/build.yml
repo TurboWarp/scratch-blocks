@@ -1,20 +1,78 @@
-name: Build
+name: Build and Push
 
 on:
   push:
-  pull_request:
+    branches:
+      - develop
+  workflow_dispatch:
+    inputs: {}
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+  pull-requests: write
 
 jobs:
   build:
     runs-on: ubuntu-latest
+
     steps:
-    - uses: actions/checkout@v4
-      with:
-        persist-credentials: false
-    - name: Install Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version: 22
-        cache: npm
-    - run: npm ci
-    - run: npm run test:lint
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        with:
+          ref: develop
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '21'
+          cache: npm
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+          java-package: 'jre'
+
+      - name: Install Dependencies
+        run: npm ci
+
+      - name: Update Translations
+        run: npm run translate
+
+      - name: Commit and Push Build
+        run: |
+          git config --local user.name "GitHub Action"
+          git config --local user.email "action@github.com"
+
+          mkdir ../build-output
+          cp -r dist/ media/ msg/ \
+            blockly_compressed_vertical.js \
+            blocks_compressed_vertical.js \
+            blocks_compressed.js \
+            blockly_uncompressed_vertical.js \
+            package.json \
+            package-lock.json \
+            ../build-output/
+
+          git fetch origin develop-builds
+          git checkout -f develop-builds
+
+          find . -maxdepth 1 ! -name '.git' ! -name '.' -exec rm -rf {} +
+
+          cp -r ../build-output/* .
+
+          git add .
+          if git diff --staged --quiet; then
+            echo "No changes to commit."
+          else
+            git commit -m "Build: $(git rev-parse --short HEAD)"
+            git push origin develop-builds
+          fi
+
+  notify:
+    needs: build
+    uses: ./.github/workflows/notify-dependents.yml
+    secrets: inherit

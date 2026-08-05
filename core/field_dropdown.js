@@ -136,8 +136,8 @@ Blockly.FieldDropdown.prototype.init = function() {
   this.className_ += ' blocklyDropdownText';
 
   Blockly.FieldDropdown.superClass_.init.call(this);
-  // If not in a shadow block, draw a box.
-  if (!this.sourceBlock_.isShadow()) {
+  // If not in a shadow block and this isn't the only field, draw a box.
+  if (!this.sourceBlock_.isShadow() && !this.sourceBlock_.isOnlyField(this)) {
     this.box_ = Blockly.utils.createSvgElement('rect', {
       'rx': Blockly.BlockSvg.CORNER_RADIUS,
       'ry': Blockly.BlockSvg.CORNER_RADIUS,
@@ -151,6 +151,19 @@ Blockly.FieldDropdown.prototype.init = function() {
       'fill-opacity': 1
     }, null);
     this.fieldGroup_.insertBefore(this.box_, this.textElement_);
+  } else if (!this.sourceBlock_.isShadow()) {
+    // Add a transparent hit area so the dropdown is easy to click.
+    var hitPadding = Blockly.BlockSvg.GRID_UNIT;
+    this.hitArea_ = Blockly.utils.createSvgElement('rect', {
+      'x': 0,
+      'y': -hitPadding,
+      'width': this.size_.width,
+      'height': this.size_.height + hitPadding * 2,
+      'fill': 'white',
+      'fill-opacity': 0,
+      'class': 'blocklyDropdownHitArea'
+    }, null);
+    this.fieldGroup_.insertBefore(this.hitArea_, this.textElement_);
   }
   // Force a reset of the text to add the arrow.
   var text = this.text_;
@@ -253,6 +266,8 @@ Blockly.FieldDropdown.prototype.showEditor_ = function() {
       this.sourceBlock_.setShadowColour(this.sourceBlock_.getColourQuaternary());
     } else if (this.box_) {
       this.box_.setAttribute('fill', this.sourceBlock_.getColourQuaternary());
+    } else if (this.sourceBlock_.svgPath_) {
+      this.sourceBlock_.svgPath_.setAttribute('fill', this.sourceBlock_.getColourQuaternary());
     }
   }
 };
@@ -268,6 +283,8 @@ Blockly.FieldDropdown.prototype.onHide = function() {
       this.sourceBlock_.clearShadowColour();
     } else if (this.box_) {
       this.box_.setAttribute('fill', this.sourceBlock_.getColour());
+    } else if (this.sourceBlock_.svgPath_) {
+      this.sourceBlock_.svgPath_.setAttribute('fill', this.sourceBlock_.getColour());
     }
   }
 };

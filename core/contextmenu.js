@@ -40,6 +40,7 @@ goog.require('goog.events');
 goog.require('goog.style');
 goog.require('goog.ui.Menu');
 goog.require('goog.ui.MenuItem');
+goog.require('goog.ui.MenuSeparator');
 goog.require('goog.userAgent');
 
 
@@ -48,6 +49,12 @@ goog.require('goog.userAgent');
  * @type {Blockly.Block}
  */
 Blockly.ContextMenu.currentBlock = null;
+
+/**
+ * Which group is the context menu attached to?
+ * @type {Blockly.Group}
+ */
+Blockly.ContextMenu.currentGroup = null;
 
 /**
  * Opaque data that can be passed to unbindEvent_.
@@ -78,6 +85,7 @@ Blockly.ContextMenu.show = function(e, options, rtl) {
   // mouse event is still waiting in the queue and clears focus.
   setTimeout(function() {menu.getElement().focus();}, 1);
   Blockly.ContextMenu.currentBlock = null;  // May be set by Blockly.Block.
+  Blockly.ContextMenu.currentGroup = null;  // May be set by Blockly.Group.
 };
 
 /**
@@ -105,6 +113,10 @@ Blockly.ContextMenu.populate_ = function(options, rtl) {
   });
 
   for (var i = 0, option; option = options[i]; i++) {
+    if (option.separator === true) {
+      var separator = new goog.ui.MenuSeparator();
+      menu.addChild(separator, true);
+    }
     var menuItem = new goog.ui.MenuItem(option.text);
     menuItem.setRightToLeft(rtl);
     menu.addChild(menuItem, true);
@@ -184,6 +196,7 @@ Blockly.ContextMenu.createWidget_ = function(menu) {
 Blockly.ContextMenu.hide = function() {
   Blockly.WidgetDiv.hideIfOwner(Blockly.ContextMenu);
   Blockly.ContextMenu.currentBlock = null;
+  Blockly.ContextMenu.currentGroup = null;
   if (Blockly.ContextMenu.eventWrapper_) {
     Blockly.unbindEvent_(Blockly.ContextMenu.eventWrapper_);
   }
@@ -251,6 +264,44 @@ Blockly.ContextMenu.blockDeleteOption = function(block) {
   return deleteOption;
 };
 
+Blockly.ContextMenu.blockCollapseOption = function(block) {
+  var descendantCount = block.getDescendants(false, true).length;
+  var nextBlock = block.getNextBlock();
+  if (nextBlock) {
+    // Blocks in the current stack would survive this block's deletion.
+    descendantCount -= nextBlock.getDescendants(false, true).length;
+  }
+
+  // Disable collapsing for procedures definition.
+  var enabled = block.type !== Blockly.PROCEDURES_DEFINITION_BLOCK_TYPE;
+
+  if (block.isCollapsed()) {
+    var expandOption = {
+      text: descendantCount == 1 ? Blockly.Msg.EXPAND_BLOCK :
+          Blockly.Msg.EXPAND_X_BLOCKS.replace('%1', String(descendantCount)),
+      enabled,
+      callback: function() {
+        block.setCollapsed(false);
+        // uncollapse any blocks in branches
+        var blocks = block.getDescendants(false, true);
+        var badBlocks = nextBlock ? nextBlock.getDescendants(false, true) : [];
+        blocks.filter(v => !badBlocks.includes(v)).forEach(v => v.setCollapsed(false));
+      }
+    };
+    return expandOption;
+  } else {
+    var collapseOption = {
+      text: descendantCount == 1 ? Blockly.Msg.COLLAPSE_BLOCK :
+          Blockly.Msg.COLLAPSE_X_BLOCKS.replace('%1', String(descendantCount)),
+      enabled,
+      callback: function() {
+        block.setCollapsed(true);
+      }
+    };
+    return collapseOption;
+  }
+};
+
 /**
  * Make a context menu option for showing help for the current block.
  * @param {!Blockly.BlockSvg} block The block where the right-click originated.
@@ -312,6 +363,75 @@ Blockly.ContextMenu.blockCommentOption = function(block) {
     };
   }
   return commentOption;
+};
+
+/**
+ * Make a context menu option for making space for the block.
+ * @param {!Blockly.BlockSvg} block The block where the right-click originated.
+ * @return {!Object} A menu option, containing text, enabled, and a callback.
+ * @package
+ */
+Blockly.ContextMenu.blockMakeSpaceOption = function(block) {
+  var makeSpaceOption = {
+    text: Blockly.Msg.MAKE_SPACE,
+    enabled: true,
+    callback: function() {
+      if (block && block.workspace) {
+        Blockly.Events.setGroup(true);
+        block.workspace.cleanUp(block);
+        Blockly.Events.setGroup(false);
+      }
+    }
+  };
+  return makeSpaceOption;
+};
+
+/**
+ * Make a context menu option for inspecting the current block.
+ * @param {!Blockly.BlockSvg} block The block where the right-click originated.
+ * @return {!Object} A menu option, containing text, enabled, and a callback.
+ * @package
+ */
+Blockly.ContextMenu.blockInspectOption = function(block) {
+  var inspectOption = {
+    text: Blockly.Msg.INSPECT_BLOCK,
+    enabled: true,
+    callback: function() {
+      if (Blockly.inspectBlockCallback) {
+        Blockly.inspectBlockCallback(block);
+      }
+    },
+    separator: true
+  };
+  return inspectOption;
+};
+
+/**
+ * Make a context-menu option which fits a new group around this block stack.
+ * @param {!Blockly.BlockSvg} block Block where the menu originated.
+ * @return {!Object} Context-menu option.
+ */
+Blockly.ContextMenu.blockGroupOption = function(block) {
+  var root = block.getRootBlock();
+  var workspace = block.workspace;
+  return {
+    text: 'Add Group',
+    enabled: !workspace.getGroupForBlock(root.id),
+    callback: function() {
+      var bounds = root.getBoundingRectangle();
+      var padding = 16;
+      var headerHeight = 32;
+      Blockly.Group.fromJSON(workspace, {
+        title: 'Group',
+        x: bounds.topLeft.x - padding,
+        y: bounds.topLeft.y - headerHeight - padding,
+        width: bounds.bottomRight.x - bounds.topLeft.x + padding * 2,
+        height: bounds.bottomRight.y - bounds.topLeft.y +
+            headerHeight + padding * 2,
+        blocks: [root.id]
+      }, true);
+    }
+  };
 };
 
 /**
@@ -465,7 +585,7 @@ Blockly.ContextMenu.commentDuplicateOption = function(comment) {
 /**
  * Make a context menu option for adding a comment on the workspace.
  * @param {!Blockly.WorkspaceSvg} ws The workspace where the right-click
- *     originated.
+ * originated.
  * @param {!Event} e The right-click mouse event.
  * @return {!Object} A menu option, containing text, enabled, and a callback.
  * @package
@@ -529,6 +649,393 @@ Blockly.ContextMenu.workspaceCommentOption = function(ws, e) {
     addWsComment();
   };
   return wsCommentOption;
+};
+
+/**
+ * Make a context-menu option for duplicating a group and its blocks.
+ * @param {!Blockly.Group} group Group to duplicate.
+ * @param {!Event} event Event that opened the context menu.
+ * @return {!Object} Context-menu option.
+ */
+Blockly.ContextMenu.groupDuplicateOption = function(group, event) {
+  return {
+    text: Blockly.Msg.DUPLICATE,
+    enabled: true,
+    callback: function(e) {
+      // Let the menu's mouse-up finish before starting the synthetic drag.
+      setTimeout(function() {
+        group.duplicateGroup_(e, event);
+      }, 0);
+    }
+  };
+};
+
+/**
+ * Make a context-menu option for renaming a group.
+ * @param {!Blockly.Group} group Group to rename.
+ * @return {!Object} Context-menu option.
+ */
+Blockly.ContextMenu.groupRenameOption = function(group) {
+  return {
+    text: Blockly.Msg.RENAME || 'Rename',
+    enabled: true,
+    callback: function() {
+      group.rename_({stopPropagation: function() {}});
+    }
+  };
+};
+
+/**
+ * Make a context-menu option for deleting a group without deleting its blocks.
+ * @param {!Blockly.Group} group Group to delete.
+ * @return {!Object} Context-menu option.
+ */
+Blockly.ContextMenu.groupDeleteOption = function(group) {
+  return {
+    text: Blockly.Msg.DELETE,
+    enabled: true,
+    callback: function() {
+      group.dispose(true);
+    }
+  };
+};
+
+/**
+ * @param {!Blockly.WorkspaceSvg} ws Target workspace.
+ * @param {!Event} e Context-menu event.
+ * @return {!Object} Context-menu entry for creating a group.
+ */
+Blockly.ContextMenu.workspaceGroupOption = function(ws, e) {
+  return {text: 'Add Group', enabled: true, callback: function() {
+    var rect = ws.getInjectionDiv().getBoundingClientRect();
+    var point = new goog.math.Coordinate(e.clientX - rect.left,
+        e.clientY - rect.top);
+    var position = goog.math.Coordinate.difference(
+        point, ws.getOriginOffsetInPixels()).scale(1 / ws.scale);
+    Blockly.Group.fromJSON(ws, {title: 'Group', x: position.x,
+      y: position.y, width: 360, height: 240}, true);
+  }};
+};
+
+/**
+ * Make context menu option for removing all blocks that are orphans
+ *     (output and no parent connection)
+ * @param {!Blockly.WorkspaceSvg} ws The workspace where the right-click
+ *     originated.
+ * @param {!number} orphanCount Amount of orphan blocks.
+ * @return {!Object} A menu option, containing text, enabled, and a callback.
+ * @package
+ */
+Blockly.ContextMenu.workspaceDeleteOrphansOption = function(ws, orphanCount) {
+  var deleteOrphans = function() {
+    Blockly.Events.setGroup(true);
+
+    var blocks = ws.getTopBlocks(true);
+    blocks.forEach(function(block) {
+      if (!!block.outputConnection && !block.parentBlock_) {
+        block.dispose();
+      }
+    });
+
+    Blockly.Events.setGroup(false);
+  };
+
+  var wsDeleteOrphansOption = {enabled: orphanCount > 0};
+  wsDeleteOrphansOption.text = orphanCount == 1
+      ? Blockly.Msg.DELETE_ORPHANS
+      : Blockly.Msg.DELETE_X_ORPHANS.replace('%1', String(orphanCount));
+  wsDeleteOrphansOption.callback = function() {
+    if (orphanCount < 2 ) {
+      deleteOrphans();
+    } else {
+      Blockly.confirm(
+          Blockly.Msg.DELETE_ALL_ORPHANS.replace('%1', String(orphanCount)),
+          function(ok) {
+            if (ok) {
+              deleteOrphans();
+            }
+          });
+    }
+  };
+  return wsDeleteOrphansOption;
+};
+
+/**
+ * Make context menu option for removing all unused local variables and lists.
+ * @param {!Blockly.WorkspaceSvg} ws The workspace where the right-click
+ *     originated.
+ * @param {!number} varCount Amount of unused local variables.
+ * @param {!number} listCount Amount of unused local lists.
+ * @param {!number} tableCount Amount of unused local tables.
+ * @return {!Object} A menu option, containing text, enabled, and a callback.
+ * @package
+ */
+Blockly.ContextMenu.workspaceCleanupUnusedVarsOption = function(ws, varCount, listCount, tableCount) {
+  var deleteUnused = function() {
+    Blockly.Events.setGroup(true);
+
+    var map = ws.getVariableMap();
+    var vars = map.getVariablesOfType('');
+    for (var i = 0; i < vars.length; i++) {
+      if (vars[i].isLocal) {
+        var usages = map.getVariableUsesById(vars[i].getId());
+        if (!usages || usages.length === 0) {
+          ws.deleteVariableById(vars[i].getId());
+        }
+      }
+    }
+
+    var lists = map.getVariablesOfType(Blockly.LIST_VARIABLE_TYPE);
+    for (var i = 0; i < lists.length; i++) {
+      if (lists[i].isLocal) {
+        var usages = map.getVariableUsesById(lists[i].getId());
+        if (!usages || usages.length === 0) {
+          ws.deleteVariableById(lists[i].getId());
+        }
+      }
+    }
+
+    var tables = map.getVariablesOfType(Blockly.TABLE_VARIABLE_TYPE);
+    for (var i = 0; i < tables.length; i++) {
+      if (tables[i].isLocal) {
+        var usages = map.getVariableUsesById(tables[i].getId());
+        if (!usages || usages.length === 0) {
+          ws.deleteVariableById(tables[i].getId());
+        }
+      }
+    }
+
+    Blockly.Events.setGroup(false);
+  };
+
+  var total = varCount + listCount;
+  var wsCleanupOption = {enabled: total > 0};
+  wsCleanupOption.text = (total == 1)
+      ? Blockly.Msg.DELETE_UNUSED_VAR
+      : Blockly.Msg.DELETE_UNUSED_VARS;
+  wsCleanupOption.callback = function() {
+    if (total < 2) {
+      deleteUnused();
+    } else {
+      var message = tableCount === 0
+        ? Blockly.Msg.DELETE_ALL_UNUSED_VARS.replace('%1', String(varCount)).replace('%2', String(listCount))
+        : Blockly.Msg.DELETE_ALL_UNUSED_TABLES
+            .replace('%1', String(varCount)).replace('%2', String(listCount)).replace('%3', String(tableCount));
+
+      Blockly.confirm(
+          message,
+          function(ok) {
+            if (ok) {
+              deleteUnused();
+            }
+          });
+    }
+  };
+  return wsCleanupOption;
+};
+
+Blockly.ContextMenu.prettyNameCache = {};
+
+/**
+ * Make context menu options for switching this block to another type.
+ * @param {!Blockly.BlockSvg} block The block where the right-click originated.
+ * @return {!Array.<!Object>} An array of menu options for each switch target.
+ * @package
+ */
+Blockly.ContextMenu.blockSwitchOption = function(block) {
+  var switches = block.getSwitches();
+
+  if (!switches || switches.length === 0) {
+    return [];
+  }
+
+  var options = [];
+
+  function maybePretty(id) {
+    if (Blockly.ContextMenu.prettyNameCache[id]) {
+      return Blockly.ContextMenu.prettyNameCache[id];
+    }
+
+    const blockDef = Blockly.Blocks[id];
+    if (!blockDef) {
+      return id.split("_").slice(1).join(" ");
+    }
+
+    let prettyText = '';
+    let tempWorkspace = null;
+    let tempBlock = null;
+
+    try {
+      tempWorkspace = new Blockly.Workspace();
+      tempBlock = tempWorkspace.newBlock(id);
+      if (tempBlock) {
+        prettyText = tempBlock.toString(
+            50 /*opt_maxLength*/,
+            null /*opt_emptyToken*/,
+            false /*opt_showImageAlts*/
+        );
+      }
+    } catch (err) {
+      console.warn(`Could not resolve block text for: ${id}`, err);
+    } finally {
+      if (tempBlock) tempBlock.dispose(false);
+      if (tempWorkspace) tempWorkspace.dispose();
+    }
+
+    const result = prettyText || id.split("_").slice(1).join(" ");
+    Blockly.ContextMenu.prettyNameCache[id] = result;
+    return result;
+  }
+
+  function getShadowFieldName(shadowType) {
+    if (shadowType === "text") return "TEXT";
+    if (shadowType === "colour_picker") return "COLOUR";
+    return "NUM";
+  }
+
+  function callIfFunction(value) {
+    return typeof value === "function" ? value() : value;
+  }
+
+  switches.forEach(function(switchData) {
+    var opcodeData = (typeof switchData === 'string') ? { opcode: switchData } : switchData;
+    var targetType = opcodeData.opcode || opcodeData.id;
+
+    if (targetType === block.type) return;
+
+    var remapInputName = opcodeData.remapInputName || {};
+    if (Array.isArray(opcodeData.inputs)) {
+      remapInputName = {};
+      opcodeData.inputs.forEach(function(pair) {
+        remapInputName[pair[0]] = pair[1];
+      });
+    }
+
+    options.push({
+      text: Blockly.Msg.SWITCH_BLOCK.replace('%1', maybePretty(targetType)),
+      enabled: true,
+      separator: options.length === 0,
+      callback: function() {
+        if (opcodeData.isNoop) return;
+
+        Blockly.Events.setGroup(true);
+        var workspace = block.workspace;
+
+        // Save the parent connection and next connection so they can be re-connected afterwards.
+        var parentConnection = null;
+        if (block.previousConnection && block.previousConnection.isConnected()) {
+          parentConnection = block.previousConnection.targetConnection;
+          block.previousConnection.disconnect();
+        } else if (block.outputConnection && block.outputConnection.isConnected()) {
+          parentConnection = block.outputConnection.targetConnection;
+          block.outputConnection.disconnect();
+        }
+
+        var nextConnection = null;
+        if (block.nextConnection && block.nextConnection.isConnected()) {
+          nextConnection = block.nextConnection.targetConnection;
+          block.nextConnection.disconnect();
+        }
+
+        if (opcodeData.splitInputs) {
+          opcodeData.splitInputs.forEach(function(inputName) {
+            var input = block.getInput(inputName);
+            if (!input || !input.connection) return;
+            var target = input.connection.targetBlock();
+            if (target && !target.isShadow()) {
+              input.connection.disconnect();
+              var metrics = block.getHeightWidth();
+              target.moveBy(4, metrics.height);
+            }
+          });
+        }
+
+        var xml = Blockly.Xml.blockToDom(block);
+        var position = block.getRelativeToSurfaceXY();
+
+        xml.setAttribute("x", position.x);
+        xml.setAttribute("y", position.y);
+        if (targetType) xml.setAttribute("type", targetType);
+
+        for (const child of Array.from(xml.children)) {
+          const oldName = child.getAttribute("name");
+          if (opcodeData.splitInputs && opcodeData.splitInputs.includes(oldName)) {
+            xml.removeChild(child);
+            continue;
+          }
+          if (remapInputName[oldName]) {
+            child.setAttribute("name", remapInputName[oldName]);
+          }
+          if (opcodeData.remapShadowType && opcodeData.remapShadowType[oldName]) {
+            const valueNode = child.firstChild;
+            const fieldNode = valueNode.firstChild;
+            valueNode.setAttribute("type", opcodeData.remapShadowType[oldName]);
+            fieldNode.setAttribute("name", getShadowFieldName(opcodeData.remapShadowType[oldName]));
+          }
+          if (opcodeData.mapFieldValues && opcodeData.mapFieldValues[oldName] && child.tagName === "FIELD") {
+            const newValue = opcodeData.mapFieldValues[oldName][child.innerText];
+            if (typeof newValue === "string") child.innerText = newValue;
+          }
+        }
+
+        if (opcodeData.mutate) {
+          const mutation = xml.querySelector("mutation");
+          for (const [key, value] of Object.entries(opcodeData.mutate)) {
+            mutation.setAttribute(key, value);
+          }
+        }
+
+        if (opcodeData.createInputs) {
+          for (const [inputName, inputData] of Object.entries(opcodeData.createInputs)) {
+            const valueElement = document.createElement("value");
+            valueElement.setAttribute("name", inputName);
+            const shadowElement = document.createElement("shadow");
+            shadowElement.setAttribute("type", inputData.shadowType);
+            const shadowFieldElement = document.createElement("field");
+            shadowFieldElement.setAttribute("name", getShadowFieldName(inputData.shadowType));
+            shadowFieldElement.innerText = callIfFunction(inputData.value);
+            shadowElement.appendChild(shadowFieldElement);
+            valueElement.appendChild(shadowElement);
+            xml.appendChild(valueElement);
+          }
+        }
+
+        block.dispose();
+        var newBlock = Blockly.Xml.domToBlock(xml, workspace);
+        newBlock.moveBy(position.x, position.y);
+
+        // Reconnect back to the parent chain.
+        if (parentConnection) {
+          try {
+            if (newBlock.previousConnection) {
+              newBlock.previousConnection.connect(parentConnection);
+            } else if (newBlock.outputConnection) {
+              newBlock.outputConnection.connect(parentConnection);
+            }
+          } catch (e) {
+            console.warn("Failed to reconnect swapped block to its parent:", e);
+          }
+        }
+
+        // Reconnect to the next block chain.
+        if (nextConnection && newBlock.nextConnection) {
+          try {
+            newBlock.nextConnection.connect(nextConnection);
+          } catch (e) {
+            console.warn("Failed to reconnect swapped block to the next block:", e);
+          }
+        }
+
+        Blockly.Events.setGroup(false);
+        if (Blockly.Events.isEnabled()) {
+          Blockly.Events.fire(new Blockly.Events.BlockCreate(newBlock));
+        }
+        newBlock.select();
+      }
+    });
+  });
+
+  return options;
 };
 
 // End helper functions for creating context menu options.

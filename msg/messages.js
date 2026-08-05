@@ -38,6 +38,7 @@ Blockly.Msg.CONTROL_FOREVER = 'forever';
 Blockly.Msg.CONTROL_REPEAT = 'repeat %1';
 Blockly.Msg.CONTROL_IF = 'if %1 then';
 Blockly.Msg.CONTROL_ELSE = 'else';
+Blockly.Msg.CONTROL_INLINE_IF_ELSE = 'if %1 then %2 else %3';
 Blockly.Msg.CONTROL_STOP = 'stop';
 Blockly.Msg.CONTROL_STOP_ALL = 'all';
 Blockly.Msg.CONTROL_STOP_THIS = 'this script';
@@ -55,6 +56,15 @@ Blockly.Msg.CONTROL_COUNTER = 'counter';
 Blockly.Msg.CONTROL_INCRCOUNTER = 'increment counter';
 Blockly.Msg.CONTROL_CLEARCOUNTER = 'clear counter';
 Blockly.Msg.CONTROL_ALLATONCE = 'all at once';
+Blockly.Msg.CONTROL_FOREACHINRANGE = 'for each %1 in range %2 to %3';
+Blockly.Msg.CONTROL_FOREACHINRANGE_ITEM = 'i';
+Blockly.Msg.CONTROL_EXTENDABLE_IF = 'if';
+Blockly.Msg.CONTROL_EXTENDABLE_THEN = 'then';
+Blockly.Msg.CONTROL_EXTENDABLE_ELSE_SEPARATOR = 'else';
+Blockly.Msg.CONTROL_EXTENDABLE_ELSE_END = 'else';
+Blockly.Msg.CONTROL_SWITCH = 'switch %1';
+Blockly.Msg.CONTROL_SWITCH_CASE = 'case';
+Blockly.Msg.CONTROL_SWITCH_DEFAULT = 'default';
 
 // Data blocks
 Blockly.Msg.DATA_SETVARIABLETO = 'set %1 to %2';
@@ -70,11 +80,61 @@ Blockly.Msg.DATA_ITEMOFLIST = 'item %1 of %2';
 Blockly.Msg.DATA_ITEMNUMOFLIST = 'item # of %1 in %2';
 Blockly.Msg.DATA_LENGTHOFLIST = 'length of %1';
 Blockly.Msg.DATA_LISTCONTAINSITEM = '%1 contains %2?';
+Blockly.Msg.DATA_LISTASARRAY = '%1 as array';
+Blockly.Msg.DATA_SETLISTARRAY = 'set list %1 to %2';
 Blockly.Msg.DATA_SHOWLIST = 'show list %1';
 Blockly.Msg.DATA_HIDELIST = 'hide list %1';
 Blockly.Msg.DATA_INDEX_ALL = 'all';
 Blockly.Msg.DATA_INDEX_LAST = 'last';
 Blockly.Msg.DATA_INDEX_RANDOM = 'random';
+Blockly.Msg.DATA_ADDTOTABLE = 'add new %1 to %2';
+Blockly.Msg.DATA_INSERTDIMENSIONTOTABLE = 'insert new %1 at %2 of %3';
+Blockly.Msg.DATA_SETCELLINTABLE = 'set cell in column %1 row %2 of %3 to %4';
+Blockly.Msg.DATA_DELETECELLINTABLE = 'delete cell in column %1 row %2 of %3';
+Blockly.Msg.DATA_DELETEDIMENSIONINTABLE = 'delete %1 %2 in %3';
+Blockly.Msg.DATA_DELETEALLOFTABLE = 'delete all of %1';
+Blockly.Msg.DATA_ITEMINCELLOFTABLE = 'item in column %1 row %2 of %3';
+Blockly.Msg.DATA_ITEMSOFDIMENSIONOFTABLE = 'items of %1 %2 of %3';
+Blockly.Msg.DATA_LENGTHOFDIMENSIONOFTABLE = 'length of %1 %2 of %3';
+Blockly.Msg.DATA_DIMENSIONCOUNTOFTABLE = '%1 count of %2';
+Blockly.Msg.DATA_TABLECONTAINSITEMINCELL = '%1 contains %2 at column %3 row %4?';
+Blockly.Msg.DATA_TABLEASARRAY = '%1 as array';
+Blockly.Msg.DATA_SETTABLEUSINGARRAY = 'set %1 to %2';
+Blockly.Msg.DATA_SHOWTABLE = 'show table %1';
+Blockly.Msg.DATA_HIDETABLE = 'hide table %1';
+Blockly.Msg.DATA_COLUMN = 'column';
+Blockly.Msg.DATA_ROW = 'row';
+
+// JSON blocks
+Blockly.Msg.JSON_NEW_OBJECT = 'new object';
+Blockly.Msg.JSON_OBJECT = 'new object %1';
+Blockly.Msg.JSON_GET_PROPERTIES = '%1 of %2';
+Blockly.Msg.JSON_GET_PROPERTIES_KEYS = 'keys';
+Blockly.Msg.JSON_GET_PROPERTIES_VALUES = 'values';
+Blockly.Msg.JSON_GET_PROPERTIES_ENTRIES = 'entries';
+Blockly.Msg.JSON_VALUE_OF_KEY = 'value of %1 in %2';
+Blockly.Msg.JSON_SET_KEY = 'set %1 in %2 to %3';
+Blockly.Msg.JSON_DELETE_KEY = 'delete %1 in %2';
+Blockly.Msg.JSON_HAS_KEY = '%1 has key %2?';
+Blockly.Msg.JSON_NEW_ARRAY = 'new array';
+Blockly.Msg.JSON_ARRAY = 'new array %1';
+Blockly.Msg.JSON_VALUE_OF_INDEX = 'item %1 of %2';
+Blockly.Msg.JSON_INDEX_OF_VALUE = 'index of %1 in %2';
+Blockly.Msg.JSON_ADD_ITEM = 'add %1 to %2';
+Blockly.Msg.JSON_REPLACE_INDEX = 'replace index %1 in %2 with %3';
+Blockly.Msg.JSON_DELETE_INDEX = 'delete index %1 from %2';
+Blockly.Msg.JSON_DELETE_ALL_OCCURRENCES = 'delete all %1 from %2';
+Blockly.Msg.JSON_HAS_ITEM = '%1 has item %2?';
+Blockly.Msg.JSON_MERGE = 'merge %1';
+Blockly.Msg.JSON_ARRAY_LENGTH = 'length of %1';
+Blockly.Msg.JSON_SLICE_ARRAY = 'items %1 to %2 in %3';
+Blockly.Msg.JSON_REVERSE_ARRAY = 'reverse %1';
+Blockly.Msg.JSON_FOREACH_VALUE = 'value';
+Blockly.Msg.JSON_FOREACH_INDEX = 'index';
+Blockly.Msg.JSON_FOREACH = 'for each %1 %2 in %3';
+Blockly.Msg.JSON_KEY = 'key';
+Blockly.Msg.JSON_BAR = 'bar';
+Blockly.Msg.JSON_BAZ = 'baz';
 
 // Event blocks
 Blockly.Msg.EVENT_WHENFLAGCLICKED = 'when %1 clicked';
@@ -185,6 +245,7 @@ Blockly.Msg.OPERATORS_ADD = '%1 + %2';
 Blockly.Msg.OPERATORS_SUBTRACT = '%1 - %2';
 Blockly.Msg.OPERATORS_MULTIPLY = '%1 * %2';
 Blockly.Msg.OPERATORS_DIVIDE = '%1 / %2';
+Blockly.Msg.OPERATORS_POWER = '%1 ^ %2';
 Blockly.Msg.OPERATORS_RANDOM = 'pick random %1 to %2';
 Blockly.Msg.OPERATORS_GT = '%1 > %2';
 Blockly.Msg.OPERATORS_LT = '%1 < %2';
@@ -197,6 +258,7 @@ Blockly.Msg.OPERATORS_JOIN_APPLE = 'apple';
 Blockly.Msg.OPERATORS_JOIN_BANANA = 'banana';
 Blockly.Msg.OPERATORS_LETTEROF = 'letter %1 of %2';
 Blockly.Msg.OPERATORS_LETTEROF_APPLE = 'a';
+Blockly.Msg.OPERATORS_LETTERSIN = 'letters %1 to %2 in %3';
 Blockly.Msg.OPERATORS_LENGTH = 'length of %1';
 Blockly.Msg.OPERATORS_CONTAINS = '%1 contains %2?';
 Blockly.Msg.OPERATORS_MOD = '%1 mod %2';
@@ -216,6 +278,31 @@ Blockly.Msg.OPERATORS_MATHOP_LN = 'ln';
 Blockly.Msg.OPERATORS_MATHOP_LOG = 'log';
 Blockly.Msg.OPERATORS_MATHOP_EEXP = 'e ^';
 Blockly.Msg.OPERATORS_MATHOP_10EXP = '10 ^';
+Blockly.Msg.OPERATORS_CAST = '%1 as %2';
+Blockly.Msg.OPERATORS_CAST_STRING = 'string';
+Blockly.Msg.OPERATORS_CAST_NUMBER = 'number';
+Blockly.Msg.OPERATORS_CAST_BOOLEAN = 'boolean';
+Blockly.Msg.OPERATORS_CAST_ARRAY = 'array';
+Blockly.Msg.OPERATORS_CAST_OBJECT = 'object';
+Blockly.Msg.OPERATORS_TYPEOF = 'type of %1';
+Blockly.Msg.OPERATORS_JOIN_EXTENDABLE = 'join %1';
+Blockly.Msg.OPERATORS_JOIN_EXTENDABLE_APPLE = 'apple';
+Blockly.Msg.OPERATORS_AND_EXTENDABLE = '%1';
+Blockly.Msg.OPERATORS_AND_EXTENDABLE_SEPARATOR = 'and';
+Blockly.Msg.OPERATORS_OR_EXTENDABLE = '%1';
+Blockly.Msg.OPERATORS_OR_EXTENDABLE_SEPARATOR = 'or';
+Blockly.Msg.OPERATORS_XOR_EXTENDABLE = '%1';
+Blockly.Msg.OPERATORS_XOR_EXTENDABLE_SEPARATOR = 'xor';
+Blockly.Msg.OPERATORS_LT_EXTENDABLE = '%1';
+Blockly.Msg.OPERATORS_LT_EXTENDABLE_SEPARATOR = '<';
+Blockly.Msg.OPERATORS_EQUALS_EXTENDABLE = '%1';
+Blockly.Msg.OPERATORS_EQUALS_EXTENDABLE_SEPARATOR = '=';
+Blockly.Msg.OPERATORS_GT_EXTENDABLE = '%1';
+Blockly.Msg.OPERATORS_GT_EXTENDABLE_SEPARATOR = '>';
+Blockly.Msg.OPERATORS_LTE = '%1';
+Blockly.Msg.OPERATORS_LTE_SEPARATOR = '≤';
+Blockly.Msg.OPERATORS_GTE = '%1';
+Blockly.Msg.OPERATORS_GTE_SEPARATOR = '≥';
 
 // Procedures blocks
 Blockly.Msg.PROCEDURES_DEFINITION = 'define %1';
@@ -225,6 +312,9 @@ Blockly.Msg.PROCEDURES_RETURN = 'return %1';
 Blockly.Msg.PROCEDURES_TO_REPORTER = 'Change To Reporter';
 Blockly.Msg.PROCEDURES_TO_STATEMENT = 'Change To Stacked Block';
 Blockly.Msg.PROCEDURES_DOCS = 'How to use return';
+
+// NB Procedures blocks
+Blockly.Msg.PROCEDURES_SET_PARAM = 'set %1 to %2';
 
 // Sensing blocks
 Blockly.Msg.SENSING_TOUCHINGOBJECT = 'touching %1?';
@@ -267,6 +357,8 @@ Blockly.Msg.SENSING_CURRENT_DAYOFWEEK = 'day of week';
 Blockly.Msg.SENSING_CURRENT_HOUR = 'hour';
 Blockly.Msg.SENSING_CURRENT_MINUTE = 'minute';
 Blockly.Msg.SENSING_CURRENT_SECOND = 'second';
+Blockly.Msg.SENSING_CURRENT_MILLISECOND = 'millisecond';
+Blockly.Msg.SENSING_CURRENT_TIMESTAMP = 'timestamp';
 Blockly.Msg.SENSING_DAYSSINCE2000 = 'days since 2000';
 Blockly.Msg.SENSING_USERNAME = 'username';
 Blockly.Msg.SENSING_USERID = 'user id';
@@ -285,15 +377,24 @@ Blockly.Msg.SOUND_SETVOLUMETO = 'set volume to %1%';
 Blockly.Msg.SOUND_VOLUME = 'volume';
 Blockly.Msg.SOUND_RECORD = 'record...';
 
+// Asset blocks
+Blockly.Msg.ASSETS_FILE_AS_TYPE = '%1 as %2';
+Blockly.Msg.ASSETS_ALL = 'all assets in %1';
+Blockly.Msg.ASSETS_METADATA = '%1 of %2';
+Blockly.Msg.ASSETS_SET = 'set %1 of %2 to %3';
+Blockly.Msg.ASSETS_WRITE = 'write %1 as %2 to %3';
+
 // Category labels
 Blockly.Msg.CATEGORY_MOTION = 'Motion';
 Blockly.Msg.CATEGORY_LOOKS = 'Looks';
 Blockly.Msg.CATEGORY_SOUND = 'Sound';
+Blockly.Msg.CATEGORY_ASSETS = 'Assets';
 Blockly.Msg.CATEGORY_EVENTS = 'Events';
 Blockly.Msg.CATEGORY_CONTROL = 'Control';
 Blockly.Msg.CATEGORY_SENSING = 'Sensing';
 Blockly.Msg.CATEGORY_OPERATORS = 'Operators';
 Blockly.Msg.CATEGORY_VARIABLES = 'Variables';
+Blockly.Msg.CATEGORY_JSON = 'JSON';
 Blockly.Msg.CATEGORY_MYBLOCKS = 'My Blocks';
 
 // Context menus
@@ -304,7 +405,23 @@ Blockly.Msg.REMOVE_COMMENT = 'Remove Comment';
 Blockly.Msg.DELETE_BLOCK = 'Delete Block';
 Blockly.Msg.DELETE_X_BLOCKS = 'Delete %1 Blocks';
 Blockly.Msg.DELETE_ALL_BLOCKS = 'Delete all %1 blocks?';
+Blockly.Msg.DELETE_ORPHANS = 'Delete orphaned Block'
+Blockly.Msg.DELETE_X_ORPHANS = 'Delete %1 orphaned Blocks'
+Blockly.Msg.DELETE_ALL_ORPHANS = 'Delete all %1 orphaned blocks?';
+Blockly.Msg.DELETE_UNUSED_VAR = 'Clean up variable';
+Blockly.Msg.DELETE_UNUSED_VARS = 'Clean up variables';
+Blockly.Msg.DELETE_ALL_UNUSED_VARS = 'Delete %1 unused variable(s) and %2 unused list(s)?';
+Blockly.Msg.DELETE_ALL_UNUSED_TABLES = 'Delete %1 unused variable(s), %2 unused list(s) and %3 unused table(s)?';
+Blockly.Msg.COLLAPSE_ALL = 'Collapse All';
+Blockly.Msg.COLLAPSE_BLOCK = 'Collapse Block';
+Blockly.Msg.COLLAPSE_X_BLOCKS = 'Collapse %1 Blocks';
+Blockly.Msg.EXPAND_ALL = 'Expand All';
+Blockly.Msg.EXPAND_BLOCK = 'Expand Block';
+Blockly.Msg.EXPAND_X_BLOCKS = 'Expand %1 Blocks';
+Blockly.Msg.SWITCH_BLOCK = 'Switch to %1';
 Blockly.Msg.CLEAN_UP = 'Clean up Blocks';
+Blockly.Msg.MAKE_SPACE = 'Make Space';
+Blockly.Msg.INSPECT_BLOCK = 'Inspect Block';
 Blockly.Msg.HELP = 'Help';
 Blockly.Msg.UNDO = 'Undo';
 Blockly.Msg.REDO = 'Redo';
@@ -324,13 +441,18 @@ Blockly.Msg.RENAME_VARIABLE = 'Rename variable';
 Blockly.Msg.RENAME_VARIABLE_TITLE = 'Rename all "%1" variables to:';
 Blockly.Msg.RENAME_VARIABLE_MODAL_TITLE = 'Rename Variable';
 Blockly.Msg.NEW_VARIABLE = 'Make a Variable';
+Blockly.Msg.NEW_VARIABLE_OPTION = 'New variable';
 Blockly.Msg.NEW_VARIABLE_TITLE = 'New variable name:';
+Blockly.Msg.REPLACE_VARIABLE = 'Replace variable';
+Blockly.Msg.REPLACE_VARIABLE_TITLE = 'Replace all "%1" variables with:';
+Blockly.Msg.REPLACE_VARIABLE_DOES_NOT_EXIST = 'No variable named "%1" exists.';
 Blockly.Msg.VARIABLE_MODAL_TITLE = 'New Variable';
 Blockly.Msg.VARIABLE_ALREADY_EXISTS = 'A variable named "%1" already exists.';
 Blockly.Msg.VARIABLE_ALREADY_EXISTS_FOR_ANOTHER_TYPE = 'A variable named "%1" already exists for another variable of type "%2".';
 Blockly.Msg.DELETE_VARIABLE_CONFIRMATION = 'Delete %1 uses of the "%2" variable?';
 Blockly.Msg.CANNOT_DELETE_VARIABLE_PROCEDURE = 'Can\'t delete the variable "%1" because it\'s part of the definition of the function "%2"';
 Blockly.Msg.DELETE_VARIABLE = 'Delete the "%1" variable';
+
 
 // Custom Procedures
 // @todo Remove these once fully managed by Scratch VM / Scratch GUI
@@ -342,14 +464,32 @@ Blockly.Msg.PROCEDURE_USED = 'To delete a block definition, first remove all use
 // Lists
 // @todo Remove these once fully managed by Scratch VM / Scratch GUI
 Blockly.Msg.NEW_LIST = 'Make a List';
+Blockly.Msg.NEW_LIST_OPTION = 'New list';
 Blockly.Msg.NEW_LIST_TITLE = 'New list name:';
 Blockly.Msg.LIST_MODAL_TITLE = 'New List';
 Blockly.Msg.LIST_ALREADY_EXISTS = 'A list named "%1" already exists.';
 Blockly.Msg.RENAME_LIST_TITLE = 'Rename all "%1" lists to:';
 Blockly.Msg.RENAME_LIST_MODAL_TITLE = 'Rename List';
+Blockly.Msg.REPLACE_LIST = 'Replace list';
+Blockly.Msg.REPLACE_LIST_TITLE = 'Replace all "%1" lists with:';
 Blockly.Msg.DEFAULT_LIST_ITEM = 'thing';
 Blockly.Msg.DELETE_LIST = 'Delete the "%1" list';
 Blockly.Msg.RENAME_LIST = 'Rename list';
+
+// Tables
+// @todo Remove these once fully managed by Scratch VM / Scratch GUI
+Blockly.Msg.NEW_TABLE = 'Make a Table';
+Blockly.Msg.NEW_TABLE_OPTION = 'New table';
+Blockly.Msg.NEW_TABLE_TITLE = 'New table name:';
+Blockly.Msg.TABLE_MODAL_TITLE = 'New Table';
+Blockly.Msg.TABLE_ALREADY_EXISTS = 'A table named "%1" already exists.';
+Blockly.Msg.RENAME_TABLE_TITLE = 'Rename all "%1" tables to:';
+Blockly.Msg.RENAME_TABLE_MODAL_TITLE = 'Rename Table';
+Blockly.Msg.REPLACE_TABLE = 'Replace table';
+Blockly.Msg.REPLACE_TABLE_TITLE = 'Replace all "%1" tables with:';
+Blockly.Msg.DEFAULT_TABLE_ITEM = 'thing';
+Blockly.Msg.DELETE_TABLE = 'Delete the "%1" table';
+Blockly.Msg.RENAME_TABLE = 'Rename table';
 
 // Broadcast Messages
 // @todo Remove these once fully managed by Scratch VM / Scratch GUI

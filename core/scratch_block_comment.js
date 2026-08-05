@@ -46,10 +46,11 @@ goog.require('goog.userAgent');
  * @param {number=} y Initial y position for comment, in workspace coordinates.
  * @param {boolean=} minimized Whether or not this comment is minimized
  *     (only the top bar displays), defaults to false.
+ * @param {string=} colour Optional custom colour.
  * @extends {Blockly.Comment}
  * @constructor
  */
-Blockly.ScratchBlockComment = function(block, text, id, x, y, minimized) {
+Blockly.ScratchBlockComment = function(block, text, id, x, y, minimized, colour) {
   Blockly.ScratchBlockComment.superClass_.constructor.call(this, block);
   /**
    * The text content of this comment.
@@ -90,6 +91,12 @@ Blockly.ScratchBlockComment = function(block, text, id, x, y, minimized) {
    * @private
    */
   this.isMinimized_ = minimized || false;
+  /**
+   * The color of this comment.
+   * @type {string}
+   * @private
+   */
+  this.colour_ = colour || null;
 
   /**
    * The workspace this comment belongs to.
@@ -178,10 +185,6 @@ Blockly.ScratchBlockComment.prototype.drawIcon_ = function(_group) {
  * @package
  */
 Blockly.ScratchBlockComment.prototype.renderIcon = function(cursorX, topMargin) {
-  if (this.collapseHidden && this.block_.isCollapsed()) {
-    this.iconGroup_.setAttribute('display', 'none');
-    return cursorX;
-  }
   this.iconGroup_.setAttribute('display', 'block');
 
   var width = this.SIZE;
@@ -289,8 +292,21 @@ Blockly.ScratchBlockComment.prototype.resizeBubble_ = function() {
  */
 Blockly.ScratchBlockComment.prototype.updateColour = function() {
   if (this.isVisible()) {
-    this.bubble_.setColour(this.block_.getColourTertiary());
+    this.bubble_.setColour(this.colour_ || this.block_.getColourTertiary(),
+        this.colour_);
   }
+};
+
+Blockly.ScratchBlockComment.prototype.getColour = function() {
+  return this.colour_ || '#fef49c';
+};
+
+Blockly.ScratchBlockComment.prototype.setColour = function(colour) {
+  if (this.colour_ == colour) return;
+  Blockly.Events.fire(new Blockly.Events.CommentChange(
+      this, {colour: this.colour_}, {colour: colour}));
+  this.colour_ = colour;
+  this.updateColour();
 };
 
 /**
@@ -359,6 +375,7 @@ Blockly.ScratchBlockComment.prototype.setVisible = function(visible) {
     this.bubble_.registerResizeEvent(this.resizeBubble_.bind(this));
     this.bubble_.registerMinimizeToggleEvent(this.toggleMinimize_.bind(this));
     this.bubble_.registerDeleteEvent(this.dispose.bind(this));
+    this.bubble_.registerColourEvent(this.setColour.bind(this));
     this.bubble_.registerContextMenuCallback(this.showContextMenu_.bind(this));
     this.updateColour();
   } else {
@@ -599,6 +616,7 @@ Blockly.ScratchBlockComment.prototype.toXmlWithXY = function() {
   element.setAttribute('y', Math.round(this.y_));
   element.setAttribute('h', this.height_);
   element.setAttribute('w', this.width_);
+  element.setAttribute('colour', this.colour_);
   return element;
 };
 

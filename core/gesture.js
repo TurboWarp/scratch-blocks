@@ -90,6 +90,14 @@ Blockly.Gesture = function(e, creatorWorkspace) {
   this.startField_ = null;
 
   /**
+   * The input that the gesture started on, or null if it did not start on an
+   * input.
+   * @type {Blockly.Input}
+   * @private
+   */
+  this.startInput_ = null;
+
+  /**
    * The block that the gesture started on, or null if it did not start on a
    * block.
    * @type {Blockly.BlockSvg}
@@ -257,6 +265,7 @@ Blockly.Gesture.prototype.dispose = function() {
 
 
   this.startField_ = null;
+  this.startInput_ = null;
   this.startBlock_ = null;
   this.targetBlock_ = null;
   this.startWorkspace_ = null;
@@ -590,6 +599,8 @@ Blockly.Gesture.prototype.handleUp = function(e) {
     this.doBubbleClick_();
   } else if (this.isFieldClick_()) {
     this.doFieldClick_();
+  } else if (this.isInputClick_()) {
+    this.doInputClick_();
   } else if (this.isBlockClick_()) {
     this.doBlockClick_();
   } else if (this.isWorkspaceClick_()) {
@@ -733,10 +744,43 @@ Blockly.Gesture.prototype.doFieldClick_ = function() {
 };
 
 /**
+ * Execute an input click.
+ * @private
+ */
+Blockly.Gesture.prototype.doInputClick_ = function() {
+  this.startInput_.onClick();
+  this.bringBlockToFront_();
+};
+
+/**
  * Execute a block click.
  * @private
  */
 Blockly.Gesture.prototype.doBlockClick_ = function() {
+  // For jumping to custom block definition if middle mouse button is used or if shift is held
+  // Below code is a slight modification of:
+  // https://github.com/TurboWarp/scratch-gui/blob/552dc5584164989d9752e847c23833bf057430f4/src/addons/addons/jump-to-def/userscript.js#L14
+  if (this.mostRecentEvent_.button === 1 || this.mostRecentEvent_.shiftKey) {
+    var block = this.startBlock_;
+    for (; block; block = block.getSurroundParent()) {
+      if (block.type !== "procedures_call") continue;
+
+      var findProcCode = block.getProcCode();
+      var topBlocks = this.startWorkspace_.getTopBlocks();
+      for(var i = 0; i < topBlocks.length; i++) {
+        var root = topBlocks[i];
+        if (root.type !== "procedures_definition") continue;
+
+        var label = root.getChildren()[0];
+        var procCode = label.getProcCode();
+        if (procCode && procCode === findProcCode) {
+          this.startWorkspace_.centerOnBlock(root.id);
+          return;
+        }
+      }
+    }
+  }
+
   // Block click in an autoclosing flyout.
   if (this.flyout_ && this.flyout_.autoClose) {
     if (!this.targetBlock_.disabled) {
@@ -807,6 +851,20 @@ Blockly.Gesture.prototype.setStartField = function(field) {
 };
 
 /**
+ * Record the input that a gesture started on.
+ * @param {Blockly.Input} input The input the gesture started on.
+ * @package
+ */
+Blockly.Gesture.prototype.setStartInput = function(input) {
+  goog.asserts.assert(!this.hasStarted_,
+      'Tried to call gesture.setStartInput, but the gesture had already been ' +
+      'started.');
+  if (!this.startInput_) {
+    this.startInput_ = input;
+  }
+};
+
+/**
  * Record the bubble that a gesture started on
  * @param {Blockly.Bubble} bubble The bubble the gesture started on.
  * @package
@@ -827,8 +885,9 @@ Blockly.Gesture.prototype.setStartBlock = function(block) {
   // If the gesture already went through a bubble, don't set the start block.
   if (!this.startBlock_ && !this.startBubble_) {
     this.startBlock_ = block;
-    this.shouldDuplicateOnDrag_ =
-        Blockly.scratchBlocksUtils.isShadowArgumentReporter(block);
+    this.shouldDuplicateOnDrag_ = !block.isInFlyout &&
+        (Blockly.scratchBlocksUtils.isShadowArgumentReporter(block) ||
+         block.canDuplicateOnDrag());
     if (block.isInFlyout && block != block.getRootBlock()) {
       this.setTargetBlock_(block.getRootBlock());
     } else {
@@ -917,6 +976,18 @@ Blockly.Gesture.prototype.isFieldClick_ = function() {
 };
 
 /**
+ * Whether this gesture is a click on an input.  This should only be called
+ * when ending a gesture (mouse up, touch end).
+ * @return {boolean} whether this gesture was a click on an input.
+ * @private
+ */
+Blockly.Gesture.prototype.isInputClick_ = function() {
+  var inputClickable = this.startInput_ ?
+      this.startInput_.isClickable() : false;
+  return inputClickable && !this.hasExceededDragRadius_;
+};
+
+/**
  * Whether this gesture is a click on a workspace.  This should only be called
  * when ending a gesture (mouse up, touch end).
  * @return {boolean} whether this gesture was a click on a workspace.
@@ -994,6 +1065,10 @@ Blockly.Gesture.prototype.duplicateOnDrag_ = function() {
     var xy = this.targetBlock_.getRelativeToSurfaceXY();
     newBlock.moveBy(xy.x, xy.y);
     newBlock.setShadow(false);
+    if (newBlock.type === 'argument_reporter_statement') {
+      newBlock.setPreviousStatement(true, 'normal');
+      newBlock.setNextStatement(true, 'normal');
+    }
   } finally {
     Blockly.Events.enable();
   }

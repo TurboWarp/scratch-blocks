@@ -272,7 +272,7 @@ Blockly.Variables.realizePotentialVar = function(varName, varType, potentialVarW
  *     on the id of the variable that is created from the user's input, or null
  *     if the change is to be aborted (cancel button or an invalid name was provided).
  * @param {string} opt_type Optional type of the variable to be created,
- *     like 'string' or 'list'.
+ *     like 'string', 'list', or 'table'.
  */
 Blockly.Variables.createVariable = function(workspace, opt_callback, opt_type) {
   // Decide on a modal message based on the opt_type. If opt_type was not
@@ -281,6 +281,9 @@ Blockly.Variables.createVariable = function(workspace, opt_callback, opt_type) {
   if (opt_type == Blockly.BROADCAST_MESSAGE_VARIABLE_TYPE) {
     newMsg = Blockly.Msg.NEW_BROADCAST_MESSAGE_TITLE;
     modalTitle = Blockly.Msg.BROADCAST_MODAL_TITLE;
+  } else if (opt_type == Blockly.TABLE_VARIABLE_TYPE) {
+    newMsg = Blockly.Msg.NEW_TABLE_TITLE;
+    modalTitle = Blockly.Msg.TABLE_MODAL_TITLE;
   } else if (opt_type == Blockly.LIST_VARIABLE_TYPE) {
     newMsg = Blockly.Msg.NEW_LIST_TITLE;
     modalTitle = Blockly.Msg.LIST_MODAL_TITLE;
@@ -329,7 +332,7 @@ Blockly.Variables.createVariable = function(workspace, opt_callback, opt_type) {
           var flyout = workspace.isFlyout ? workspace : workspace.getFlyout();
           var variableBlockId = variable.getId();
           if (flyout.setCheckboxState) {
-            flyout.setCheckboxState(variableBlockId, true);
+            flyout.setCheckboxState(variableBlockId, false);
           }
 
           if (opt_callback) {
@@ -374,17 +377,20 @@ Blockly.Variables.nameValidator_ = function(type, text, workspace, additionalVar
   // For broadcast messages, if a broadcast message of the provided name already exists,
   // the validator needs to call a function that updates the selected
   // field option of the dropdown menu of the block that was used to create the new message.
-  // For scalar variables and lists, the validator has the same validation behavior, but needs
+  // For scalar variables, lists, and tables, the validator has the same validation behavior, but needs
   // to know which type of variable to check for and needs a type-specific error message
   // that is displayed when a variable of the given name and type already exists.
 
   if (type == Blockly.BROADCAST_MESSAGE_VARIABLE_TYPE) {
     return Blockly.Variables.validateBroadcastMessageName_(text, workspace, opt_callback);
+  } else if (type == Blockly.TABLE_VARIABLE_TYPE) {
+    return Blockly.Variables.validateScalarVarListOrTableName_(text, workspace, additionalVars, false, type,
+        Blockly.Msg.TABLE_ALREADY_EXISTS);
   } else if (type == Blockly.LIST_VARIABLE_TYPE) {
-    return Blockly.Variables.validateScalarVarOrListName_(text, workspace, additionalVars, false, type,
+    return Blockly.Variables.validateScalarVarListOrTableName_(text, workspace, additionalVars, false, type,
         Blockly.Msg.LIST_ALREADY_EXISTS);
   } else {
-    return Blockly.Variables.validateScalarVarOrListName_(text, workspace, additionalVars, isCloud, type,
+    return Blockly.Variables.validateScalarVarListOrTableName_(text, workspace, additionalVars, isCloud, type,
         Blockly.Msg.VARIABLE_ALREADY_EXISTS);
   }
 };
@@ -424,7 +430,7 @@ Blockly.Variables.validateBroadcastMessageName_ = function(name, workspace, opt_
 };
 
 /**
- * Validate the given name as a scalar variable or list type.
+ * Validate the given name as a scalar variable, list, or table type.
  * This function is also responsible for any user facing error-handling.
  * @param {string} name The name to validate
  * @param {!Blockly.Workspace} workspace The workspace the name should be validated
@@ -433,13 +439,13 @@ Blockly.Variables.validateBroadcastMessageName_ = function(name, workspace, opt_
  *     for conflicts against.
  * @param {boolean} isCloud Whether the variable is a cloud variable.
  * @param {string} type The type to validate the variable as. This should be one of
- *     Blockly.SCALAR_VARIABLE_TYPE or Blockly.LIST_VARIABLE_TYPE.
+ *     Blockly.SCALAR_VARIABLE_TYPE, Blockly.LIST_VARIABLE_TYPE or Blockly.TABLE_VARIABLE_TYPE.
  * @param {string} errorMsg The type-specific error message the user should see
  *     if a variable of the validated, given name and type already exists.
  * @return {string} The validated name, or null if invalid.
  * @private
  */
-Blockly.Variables.validateScalarVarOrListName_ = function(name, workspace, additionalVars,
+Blockly.Variables.validateScalarVarListOrTableName_ = function(name, workspace, additionalVars,
     isCloud, type, errorMsg) {
   // For scalar variables, we don't want leading or trailing white space
   name = Blockly.Variables.trimName_(name);
@@ -477,7 +483,10 @@ Blockly.Variables.renameVariable = function(workspace, variable,
         'id: ' + variable.getId() + ' and name: ' + variable.name);
     return;
   }
-  if (varType == Blockly.LIST_VARIABLE_TYPE) {
+  if (varType == Blockly.TABLE_VARIABLE_TYPE) {
+    promptMsg = Blockly.Msg.RENAME_TABLE_TITLE;
+    modalTitle = Blockly.Msg.RENAME_TABLE_MODAL_TITLE;
+  } else if (varType == Blockly.LIST_VARIABLE_TYPE) {
     promptMsg = Blockly.Msg.RENAME_LIST_TITLE;
     modalTitle = Blockly.Msg.RENAME_LIST_MODAL_TITLE;
   } else {
@@ -519,7 +528,7 @@ Blockly.Variables.renameVariable = function(workspace, variable,
 
 /**
  * Strip leading and trailing whitespace from the given name, for use with
- * user provided name for scalar variables and lists.
+ * user provided name for scalar variables, lists, and tables.
  * @param {string} name The user-provided name of the variable.
  * @return {string} The trimmed name, or whatever falsey value was originally provided.
  */
@@ -536,8 +545,8 @@ Blockly.Variables.trimName_ = function(name) {
  * Generate XML string for variable field.
  * @param {!Blockly.VariableModel} variableModel The variable model to generate
  *     an XML string from.
- * @param {?string} opt_name The optional name of the field, such as "VARIABLE"
- *     or "LIST". Defaults to "VARIABLE".
+ * @param {?string} opt_name The optional name of the field, such as "VARIABLE",
+ *     "LIST", or "TABLE". Defaults to "VARIABLE".
  * @return {string} The generated XML.
  * @private
  */

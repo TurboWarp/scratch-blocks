@@ -30,6 +30,8 @@
  **/
 goog.provide('Blockly');
 
+goog.require('Polypatch');
+goog.require('Blockly.ColourMutation');
 goog.require('Blockly.BlockSvg.render');
 goog.require('Blockly.DropDownDiv');
 goog.require('Blockly.Events');
@@ -41,6 +43,8 @@ goog.require('Blockly.FieldColourSlider');
 // Add it only if you need it.
 //goog.require('Blockly.FieldDate');
 goog.require('Blockly.FieldDropdown');
+goog.require('Blockly.FieldDropdownEditor');
+goog.require('Blockly.FieldExtendable');
 goog.require('Blockly.FieldIconMenu');
 goog.require('Blockly.FieldImage');
 goog.require('Blockly.FieldNote');
@@ -410,6 +414,15 @@ Blockly.prompt = function(message, defaultValue, callback, _opt_title,
  */
 Blockly.statusButtonCallback = function(id) {
   window.alert('status button was pressed for ' + id);
+};
+
+/**
+ * A callback for inspecting a block. The window.alert is here for testing and
+ * should be overridden.
+ * @param {!Blockly.BlockSvg} block The block to inspect.
+ */
+Blockly.inspectBlockCallback = function(block) {
+  window.alert('block was inspected for ' + block.type);
 };
 
 /**

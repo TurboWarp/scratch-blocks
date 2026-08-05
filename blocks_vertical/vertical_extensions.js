@@ -76,8 +76,8 @@ Blockly.ScratchBlocks.VerticalExtensions.COLOUR_TEXTFIELD = function() {
  */
 Blockly.ScratchBlocks.VerticalExtensions.SHAPE_STATEMENT = function() {
   this.setInputsInline(true);
-  this.setPreviousStatement(true, null);
-  this.setNextStatement(true, null);
+  this.setPreviousStatement(true, "normal");
+  this.setNextStatement(true, "normal");
 };
 
 /**
@@ -89,7 +89,7 @@ Blockly.ScratchBlocks.VerticalExtensions.SHAPE_STATEMENT = function() {
  */
 Blockly.ScratchBlocks.VerticalExtensions.SHAPE_HAT = function() {
   this.setInputsInline(true);
-  this.setNextStatement(true, null);
+  this.setNextStatement(true, "normal");
 };
 
 /**
@@ -101,7 +101,7 @@ Blockly.ScratchBlocks.VerticalExtensions.SHAPE_HAT = function() {
  */
 Blockly.ScratchBlocks.VerticalExtensions.SHAPE_END = function() {
   this.setInputsInline(true);
-  this.setPreviousStatement(true, null);
+  this.setPreviousStatement(true, "normal");
 };
 
 /**
@@ -141,6 +141,32 @@ Blockly.ScratchBlocks.VerticalExtensions.OUTPUT_BOOLEAN = function() {
   this.setInputsInline(true);
   this.setOutputShape(Blockly.OUTPUT_SHAPE_HEXAGONAL);
   this.setOutput(true, 'Boolean');
+};
+
+/**
+ * Extension to represent a object reporter in Scratch-Blocks.
+ * That means the block has inline inputs, a round output shape, and a 'Object'
+ * output type.
+ * @this {Blockly.Block}
+ * @readonly
+ */
+Blockly.ScratchBlocks.VerticalExtensions.OUTPUT_OBJECT = function() {
+  this.setInputsInline(true);
+  this.setOutputShape(Blockly.OUTPUT_SHAPE_OBJECT);
+  this.setOutput(true, 'Object');
+};
+
+/**
+ * Extension to make represent a array reporter in Scratch-Blocks.
+ * That means the block has inline inputs, a round output shape, and a 'Array'
+ * output type.
+ * @this {Blockly.Block}
+ * @readonly
+ */
+Blockly.ScratchBlocks.VerticalExtensions.OUTPUT_ARRAY = function() {
+  this.setInputsInline(true);
+  this.setOutputShape(Blockly.OUTPUT_SHAPE_SQUARE);
+  this.setOutput(true, 'Array');
 };
 
 /**
@@ -212,8 +238,7 @@ Blockly.ScratchBlocks.VerticalExtensions.PROCEDURE_CALL_CONTEXTMENU = {
     menuOptions.push(Blockly.Procedures.makeEditOption(this));
     if (
       !this.isInFlyout &&
-      Blockly.Procedures.USER_CAN_CHANGE_CALL_TYPE &&
-      this.workspace.procedureReturnsEnabled
+      Blockly.Procedures.USER_CAN_CHANGE_CALL_TYPE
     ) {
       menuOptions.push(Blockly.Procedures.makeChangeTypeOption(this));
     }
@@ -238,7 +263,7 @@ Blockly.ScratchBlocks.VerticalExtensions.SCRATCH_EXTENSION = function() {
  */
 Blockly.ScratchBlocks.VerticalExtensions.registerAll = function() {
   var categoryNames =
-      ['control', 'data', 'data_lists', 'sounds', 'motion', 'looks', 'event',
+      ['control', 'data', 'data_lists', 'data_tables', 'json', 'assets', 'sounds', 'motion', 'looks', 'event',
         'sensing', 'pen', 'operators', 'more'];
   // Register functions for all category colours.
   for (var i = 0; i < categoryNames.length; i++) {
@@ -266,6 +291,10 @@ Blockly.ScratchBlocks.VerticalExtensions.registerAll = function() {
       Blockly.ScratchBlocks.VerticalExtensions.OUTPUT_STRING);
   Blockly.Extensions.register('output_boolean',
       Blockly.ScratchBlocks.VerticalExtensions.OUTPUT_BOOLEAN);
+  Blockly.Extensions.register('output_object',
+      Blockly.ScratchBlocks.VerticalExtensions.OUTPUT_OBJECT);
+  Blockly.Extensions.register('output_array',
+      Blockly.ScratchBlocks.VerticalExtensions.OUTPUT_ARRAY);
 
   // Custom procedures have interesting context menus.
   Blockly.Extensions.registerMixin('procedure_def_contextmenu',

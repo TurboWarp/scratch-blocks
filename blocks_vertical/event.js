@@ -238,7 +238,10 @@ Blockly.Blocks['event_broadcast'] = {
         }
       ],
       "category": Blockly.Categories.event,
-      "extensions": ["colours_event", "shape_statement"]
+      "extensions": ["colours_event", "shape_statement"],
+      "swatches": [
+        'event_broadcastandwait'
+      ]
     });
   }
 };
@@ -258,7 +261,10 @@ Blockly.Blocks['event_broadcastandwait'] = {
         }
       ],
       "category": Blockly.Categories.event,
-      "extensions": ["colours_event", "shape_statement"]
+      "extensions": ["colours_event", "shape_statement"],
+      "swatches": [
+        'event_broadcast'
+      ]
     });
   }
 };

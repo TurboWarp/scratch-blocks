@@ -27,6 +27,7 @@
 goog.provide('Blockly.WorkspaceCommentSvg.render');
 
 goog.require('Blockly.WorkspaceCommentSvg');
+goog.require('Blockly.SystemColourPicker');
 
 /**
  * Radius of the border around the comment.
@@ -164,6 +165,11 @@ Blockly.WorkspaceCommentSvg.prototype.render = function() {
       this.deleteIcon_, 'mouseout', this, this.deleteMouseOut_, true);
   Blockly.bindEventWithChecks_(
       this.deleteIcon_, 'mouseup', this, this.deleteMouseUp_, true);
+  var comment = this;
+  this.colourControl_ = Blockly.SystemColourPicker.attach(this.colourIcon_,
+      function() { return comment.getColour(); },
+      function(colour) { comment.setColour(colour); });
+  this.applyColour_();
 };
 
 /**
@@ -316,6 +322,12 @@ Blockly.WorkspaceCommentSvg.prototype.createTopBarIcons_ = function() {
       }, this.svgGroup_);
   this.deleteIcon_.setAttributeNS('http://www.w3.org/1999/xlink',
       'xlink:href', Blockly.mainWorkspace.options.pathToMedia + 'delete-x.svg');
+  this.colourIcon_ = Blockly.utils.createSvgElement('image',
+      {'class': 'scratchCommentButton', 'x': xInset,
+        'y': topBarMiddleY - 10, 'width': 20, 'height': 20},
+      this.svgGroup_);
+  this.colourIcon_.setAttributeNS('http://www.w3.org/1999/xlink',
+      'xlink:href', Blockly.mainWorkspace.options.pathToMedia + 'paintbrush.svg');
 };
 
 /**
@@ -392,6 +404,15 @@ Blockly.WorkspaceCommentSvg.prototype.deleteMouseUp_ = function(e) {
     this.dispose();
   }
   e.stopPropagation();
+};
+
+Blockly.WorkspaceCommentSvg.prototype.applyColour_ = function() {
+  this.svgRect_.style.fill = this.colour_ || '';
+  this.svgRect_.style.stroke = this.colour_ || '';
+  this.commentEditor_.firstChild.style.backgroundColor = this.colour_ || '';
+  var textColour = Blockly.SystemColourPicker.isDark(this.colour_) ? '#ffffff' : '';
+  this.textarea_.style.color = textColour;
+  this.topBarLabel_.style.fill = textColour;
 };
 
 /**
@@ -589,6 +610,8 @@ Blockly.WorkspaceCommentSvg.prototype.setSize = function(width, height) {
         Blockly.WorkspaceCommentSvg.TOP_BAR_ICON_INSET);
     this.deleteIcon_.setAttribute('x', (-width +
         Blockly.WorkspaceCommentSvg.TOP_BAR_ICON_INSET));
+    this.colourIcon_.setAttribute('x', -width + 38);
+    if (this.colourControl_) this.colourControl_.setAttribute('x', -width + 38);
     this.svgRect_.setAttribute('transform', 'scale(-1 1)');
     this.svgHandleTarget_.setAttribute('transform', 'scale(-1 1)');
     this.svgHandleTarget_.setAttribute('transform', 'translate(' + -width + ', 1)');
@@ -599,6 +622,8 @@ Blockly.WorkspaceCommentSvg.prototype.setSize = function(width, height) {
     this.deleteIcon_.setAttribute('x', width -
         Blockly.WorkspaceCommentSvg.DELETE_ICON_SIZE -
         Blockly.WorkspaceCommentSvg.TOP_BAR_ICON_INSET);
+    this.colourIcon_.setAttribute('x', width - 58);
+    if (this.colourControl_) this.colourControl_.setAttribute('x', width - 58);
   }
 
   var resizeSize = Blockly.WorkspaceCommentSvg.RESIZE_SIZE;

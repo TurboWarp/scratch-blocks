@@ -117,10 +117,25 @@ Blockly.WorkspaceSvg = function(options, opt_blockDragSurface, opt_wsDragSurface
   this.registerToolboxCategoryCallback(Blockly.PROCEDURE_CATEGORY_NAME,
       Blockly.Procedures.flyoutCategory);
 
-  this.procedureReturnsEnabled = Blockly.Procedures.DEFAULT_ENABLE_RETURNS;
   this.initialProcedureReturnTypes_ = null;
   this.procedureReturnChangeTimeout_ = null;
   this.checkProcedureReturnAfterGesture_ = false;
+
+  /**
+   * Last known mouse position in workspace coordinates.
+   * Used to paste blocks at the cursor location.
+   * @type {goog.math.Coordinate}
+   * @private
+   */
+  this.lastMouseXY_ = null;
+
+  /**
+   * Last known mouse position in client coordinates.
+   * Used to initiate drag after paste.
+   * @type {goog.math.Coordinate}
+   * @private
+   */
+  this.lastMouseClientXY_ = null;
 };
 goog.inherits(Blockly.WorkspaceSvg, Blockly.Workspace);
 
@@ -476,6 +491,13 @@ Blockly.WorkspaceSvg.prototype.createDom = function(opt_backgroundClass) {
       Blockly.bindEventWithChecks_(this.svgGroup_, 'wheel', this,
           this.onMouseWheel_);
     }
+    // Track mouse position for paste-at-cursor.
+    Blockly.bindEventWithChecks_(this.svgGroup_, 'mousemove', this,
+        this.onMouseMoveTrack_);
+    // Track mouse position globally so paste always has a fresh position,
+    // even if the mouse hasn't moved over the workspace recently.
+    this.onMouseMoveTrackDocHandler_ = this.onMouseMoveTrackDoc_.bind(this);
+    document.addEventListener('mousemove', this.onMouseMoveTrackDocHandler_);
   }
 
   this.intersectionObserver = new Blockly.IntersectionObserver(this);
@@ -562,6 +584,10 @@ Blockly.WorkspaceSvg.prototype.dispose = function() {
   if (this.resizeHandlerWrapper_) {
     Blockly.unbindEvent_(this.resizeHandlerWrapper_);
     this.resizeHandlerWrapper_ = null;
+  }
+  if (this.onMouseMoveTrackDocHandler_) {
+    document.removeEventListener('mousemove', this.onMouseMoveTrackDocHandler_);
+    this.onMouseMoveTrackDocHandler_ = null;
   }
   if (this.procedureReturnChangeTimeout_) {
     clearTimeout(this.procedureReturnChangeTimeout_);
@@ -728,6 +754,24 @@ Blockly.WorkspaceSvg.prototype.processProcedureReturnsChanged_ = function() {
   this.procedureReturnChangeTimeout_ = null;
 
   Blockly.Events.setGroup(true);
+  for (var changedProcCode in finalTypes) {
+    if (
+      !Object.prototype.hasOwnProperty.call(initialTypes, changedProcCode) ||
+      initialTypes[changedProcCode] === finalTypes[changedProcCode]
+    ) continue;
+
+    var prototype = Blockly.Procedures.getPrototypeBlock(changedProcCode, this);
+    if (!prototype) continue;
+    var oldPrototypeMutationDom = prototype.mutationToDom();
+    var oldPrototypeMutation = Blockly.Xml.domToText(oldPrototypeMutationDom);
+    prototype.return_ = finalTypes[changedProcCode];
+    var newPrototypeMutationDom = prototype.mutationToDom();
+    var newPrototypeMutation = Blockly.Xml.domToText(newPrototypeMutationDom);
+    if (oldPrototypeMutation !== newPrototypeMutation) {
+      Blockly.Events.fire(new Blockly.Events.BlockChange(
+          prototype, 'mutation', null, oldPrototypeMutation, newPrototypeMutation));
+    }
+  }
   var topBlocks = this.getTopBlocks(false);
   for (var i = 0; i < topBlocks.length; i++) {
     var block = topBlocks[i];
@@ -775,13 +819,6 @@ Blockly.WorkspaceSvg.prototype.processProcedureReturnsChanged_ = function() {
   if (toolboxOutdated) {
     this.refreshToolboxSelection_();
   }
-};
-
-/**
- * Does not refresh toolbox.
- */
-Blockly.WorkspaceSvg.prototype.enableProcedureReturns = function() {
-  this.procedureReturnsEnabled = true;
 };
 
 /**
@@ -1083,9 +1120,11 @@ Blockly.WorkspaceSvg.prototype.glowStack = function(id, isGlowingStack) {
  * Visually report a value associated with a block.
  * In Scratch, appears as a pop-up next to the block when a reporter block is clicked.
  * @param {?string} id ID of block to report associated value.
- * @param {?string} value String value to visually report.
+ * @param {?string} value String value to visually report and to use for copy.
+ * @param {?boolean} error Is the thing being reported an error?
+ * @param {?string} html HTML value to visually report.
  */
-Blockly.WorkspaceSvg.prototype.reportValue = function(id, value) {
+Blockly.WorkspaceSvg.prototype.reportValue = function(id, value, error = false, html) {
   var block = this.getBlockById(id);
   if (!block) {
     throw 'Tried to report value on block that does not exist.';
@@ -1095,11 +1134,34 @@ Blockly.WorkspaceSvg.prototype.reportValue = function(id, value) {
   var contentDiv = Blockly.DropDownDiv.getContentDiv();
   var valueReportBox = goog.dom.createElement('div');
   valueReportBox.setAttribute('class', 'valueReportBox');
-  valueReportBox.textContent = value;
+  if (error) {
+    valueReportBox.classList.add('errorReportBox');
+  }
+  if (html && typeof html !== "undefined") valueReportBox.innerHTML = html;
+  else valueReportBox.textContent = value;
+  // use to get focus and event priority
+  valueReportBox.setAttribute("tabindex", "0");
+  // if the user pressed Ctrl+C, prevent propagation to Blockly
+  valueReportBox.onkeydown = (event) => {
+    if ((event.altKey || event.ctrlKey || event.metaKey) && event.code === "KeyC") {
+      event.stopPropagation();
+    }
+  };
+
+  if (value.length !== 0) {
+    const copyButton = document.createElement("img");
+    copyButton.setAttribute("role", "button");
+    copyButton.setAttribute("tabindex", "0");
+    copyButton.setAttribute("alt", "Copy to clipboard");
+    copyButton.setAttribute("src", Blockly.mainWorkspace.options.pathToMedia + "icons/copy.svg");
+    copyButton.classList.add("copyReporterIcon");
+    copyButton.onclick = () => navigator.clipboard.writeText(value);
+    valueReportBox.appendChild(copyButton);
+  }
   contentDiv.appendChild(valueReportBox);
   Blockly.DropDownDiv.setColour(
-      Blockly.Colours.valueReportBackground,
-      Blockly.Colours.valueReportBorder
+      Blockly.Colours[!error ? 'valueReportBackground' : 'errorReportBackground'],
+      Blockly.Colours[!error ? 'valueReportBorder' : 'errorReportBorder']
   );
   Blockly.DropDownDiv.showPositionedByBlock(this, block);
 };
@@ -1115,16 +1177,30 @@ Blockly.WorkspaceSvg.prototype.paste = function(xmlBlock) {
   if (this.currentGesture_) {
     this.currentGesture_.cancel();  // Dragging while pasting?  No.
   }
+  this.updateLastMouseXYFromClient_();
   if (xmlBlock.tagName.toLowerCase() == 'comment') {
     this.pasteWorkspaceComment_(xmlBlock);
   } else {
-    this.pasteBlock_(xmlBlock);
+    var pastedBlock = this.pasteBlock_(xmlBlock);
+    // Start dragging the pasted block immediately.
+    if (pastedBlock && pastedBlock.isMovable() && this.lastMouseClientXY_) {
+      var fakeEvent = {
+        clientX: this.lastMouseClientXY_.x,
+        clientY: this.lastMouseClientXY_.y,
+        type: 'mousedown',
+        target: pastedBlock.svgGroup_,
+        preventDefault: function() {},
+        stopPropagation: function() {}
+      };
+      this.startDragWithFakeEvent(fakeEvent, pastedBlock);
+    }
   }
 };
 
 /**
  * Paste the provided block onto the workspace.
  * @param {!Element} xmlBlock XML block element.
+ * @returns {!Blockly.BlockSvg} The pasted block.
  */
 Blockly.WorkspaceSvg.prototype.pasteBlock_ = function(xmlBlock) {
   Blockly.Events.disable();
@@ -1133,49 +1209,29 @@ Blockly.WorkspaceSvg.prototype.pasteBlock_ = function(xmlBlock) {
     var block = Blockly.Xml.domToBlock(xmlBlock, this);
     // Scratch-specific: Give shadow dom new IDs to prevent duplicating on paste
     Blockly.scratchBlocksUtils.changeObscuredShadowIds(block);
-    // Move the duplicate to original position.
-    var blockX = parseInt(xmlBlock.getAttribute('x'), 10);
-    var blockY = parseInt(xmlBlock.getAttribute('y'), 10);
-    if (!isNaN(blockX) && !isNaN(blockY)) {
+    // Move the duplicate to mouse cursor position.
+    var blockX;
+    var blockY;
+    if (this.lastMouseXY_) {
+      blockX = this.lastMouseXY_.x;
+      blockY = this.lastMouseXY_.y;
+      // Center the block on the cursor.
+      var blockHW = block.getHeightWidth();
+      blockX -= blockHW.width / 2;
+      blockY -= blockHW.height / 2;
+    } else {
+      // Fallback: use original position from XML.
+      blockX = parseInt(xmlBlock.getAttribute('x'), 10);
+      blockY = parseInt(xmlBlock.getAttribute('y'), 10);
+      if (isNaN(blockX) || isNaN(blockY)) {
+        blockX = 0;
+        blockY = 0;
+      }
       if (this.RTL) {
         blockX = -blockX;
       }
-      // Offset block until not clobbering another block and not in connection
-      // distance with neighbouring blocks.
-      do {
-        var collide = false;
-        var allBlocks = this.getAllBlocks();
-        for (var i = 0, otherBlock; otherBlock = allBlocks[i]; i++) {
-          var otherXY = otherBlock.getRelativeToSurfaceXY();
-          if (Math.abs(blockX - otherXY.x) <= 1 &&
-              Math.abs(blockY - otherXY.y) <= 1) {
-            collide = true;
-            break;
-          }
-        }
-        if (!collide) {
-          // Check for blocks in snap range to any of its connections.
-          var connections = block.getConnections_(false);
-          for (var i = 0, connection; connection = connections[i]; i++) {
-            var neighbour = connection.closest(Blockly.SNAP_RADIUS,
-                new goog.math.Coordinate(blockX, blockY));
-            if (neighbour.connection) {
-              collide = true;
-              break;
-            }
-          }
-        }
-        if (collide) {
-          if (this.RTL) {
-            blockX -= Blockly.SNAP_RADIUS;
-          } else {
-            blockX += Blockly.SNAP_RADIUS;
-          }
-          blockY += Blockly.SNAP_RADIUS * 2;
-        }
-      } while (collide);
-      block.moveBy(blockX, blockY);
     }
+    block.moveBy(blockX, blockY);
   } finally {
     Blockly.Events.enable();
   }
@@ -1183,6 +1239,7 @@ Blockly.WorkspaceSvg.prototype.pasteBlock_ = function(xmlBlock) {
     Blockly.Events.fire(new Blockly.Events.BlockCreate(block));
   }
   block.select();
+  return block;
 };
 
 /**
@@ -1258,6 +1315,17 @@ Blockly.WorkspaceSvg.prototype.renameVariableById = function(id, newName) {
  */
 Blockly.WorkspaceSvg.prototype.deleteVariableById = function(id) {
   Blockly.WorkspaceSvg.superClass_.deleteVariableById.call(this, id);
+  this.refreshToolboxSelection_();
+};
+
+/**
+ * Replace all uses of one variable with another existing variable.
+ * @param {string} oldId ID of the variable to replace.
+ * @param {string} newId ID of the variable to replace with.
+ * @package
+ */
+Blockly.WorkspaceSvg.prototype.replaceVariableById = function(oldId, newId) {
+  Blockly.WorkspaceSvg.superClass_.replaceVariableById.call(this, oldId, newId);
   this.refreshToolboxSelection_();
 };
 
@@ -1369,6 +1437,58 @@ Blockly.WorkspaceSvg.prototype.onMouseDown_ = function(e) {
   if (gesture) {
     gesture.handleWsStart(e, this);
   }
+
+  var point = Blockly.utils.mouseToSvg(e, this.getParentSvg(),
+      this.getInverseScreenCTM());
+  var canvasTranslation = Blockly.utils.getRelativeXY(this.svgBlockCanvas_);
+  this.lastMouseXY_ = new goog.math.Coordinate(
+      (point.x - canvasTranslation.x) / this.scale,
+      (point.y - canvasTranslation.y) / this.scale);
+  this.lastMouseClientXY_ = new goog.math.Coordinate(e.clientX, e.clientY);
+};
+
+/**
+ * Track mouse position for paste-at-cursor.
+ * @param {!Event} e Mouse move event.
+ * @private
+ */
+Blockly.WorkspaceSvg.prototype.onMouseMoveTrack_ = function(e) {
+  var point = Blockly.utils.mouseToSvg(e, this.getParentSvg(),
+      this.getInverseScreenCTM());
+  var canvasTranslation = Blockly.utils.getRelativeXY(this.svgBlockCanvas_);
+  this.lastMouseXY_ = new goog.math.Coordinate(
+      (point.x - canvasTranslation.x) / this.scale,
+      (point.y - canvasTranslation.y) / this.scale);
+  this.lastMouseClientXY_ = new goog.math.Coordinate(e.clientX, e.clientY);
+};
+
+/**
+ * Track mouse position globally for paste-at-cursor.
+ * @param {!Event} e Mouse move event.
+ * @private
+ */
+Blockly.WorkspaceSvg.prototype.onMouseMoveTrackDoc_ = function(e) {
+  this.lastMouseClientXY_ = new goog.math.Coordinate(e.clientX, e.clientY);
+};
+
+/**
+ * Recompute lastMouseXY_ (workspace coörds) from lastMouseClientXY_ (client coörds).
+ * @private
+ */
+Blockly.WorkspaceSvg.prototype.updateLastMouseXYFromClient_ = function() {
+  if (!this.lastMouseClientXY_) {
+    return;
+  }
+  var fakeEvent = {
+    clientX: this.lastMouseClientXY_.x,
+    clientY: this.lastMouseClientXY_.y
+  };
+  var point = Blockly.utils.mouseToSvg(fakeEvent, this.getParentSvg(),
+      this.getInverseScreenCTM());
+  var canvasTranslation = Blockly.utils.getRelativeXY(this.svgBlockCanvas_);
+  this.lastMouseXY_ = new goog.math.Coordinate(
+      (point.x - canvasTranslation.x) / this.scale,
+      (point.y - canvasTranslation.y) / this.scale);
 };
 
 /**
@@ -1474,30 +1594,53 @@ Blockly.WorkspaceSvg.prototype.getBlocksBoundingBox = function() {
   var topBlocks = this.getTopBlocks(false);
   var topComments = this.getTopComments(false);
   var topElements = topBlocks.concat(topComments);
-  // There are no blocks, return empty rectangle.
-  if (!topElements.length) {
+  var groups = this.getGroups();
+  // There are no blocks, comments, or groups, return empty rectangle.
+  if (!topElements.length && !groups.length) {
     return {x: 0, y: 0, width: 0, height: 0};
   }
 
-  // Initialize boundary using the first block.
-  var boundary = topElements[0].getBoundingRectangle();
+  var boundary;
+  if (topElements.length) {
+    // Initialize boundary using the first block.
+    boundary = topElements[0].getBoundingRectangle();
 
-  // Start at 1 since the 0th block was used for initialization
-  for (var i = 1; i < topElements.length; i++) {
-    var blockBoundary = topElements[i].getBoundingRectangle();
-    if (blockBoundary.topLeft.x < boundary.topLeft.x) {
-      boundary.topLeft.x = blockBoundary.topLeft.x;
+    // Start at 1 since the 0th block was used for initialization
+    for (var i = 1; i < topElements.length; i++) {
+      var blockBoundary = topElements[i].getBoundingRectangle();
+      if (blockBoundary.topLeft.x < boundary.topLeft.x) {
+        boundary.topLeft.x = blockBoundary.topLeft.x;
+      }
+      if (blockBoundary.bottomRight.x > boundary.bottomRight.x) {
+        boundary.bottomRight.x = blockBoundary.bottomRight.x;
+      }
+      if (blockBoundary.topLeft.y < boundary.topLeft.y) {
+        boundary.topLeft.y = blockBoundary.topLeft.y;
+      }
+      if (blockBoundary.bottomRight.y > boundary.bottomRight.y) {
+        boundary.bottomRight.y = blockBoundary.bottomRight.y;
+      }
     }
-    if (blockBoundary.bottomRight.x > boundary.bottomRight.x) {
-      boundary.bottomRight.x = blockBoundary.bottomRight.x;
-    }
-    if (blockBoundary.topLeft.y < boundary.topLeft.y) {
-      boundary.topLeft.y = blockBoundary.topLeft.y;
-    }
-    if (blockBoundary.bottomRight.y > boundary.bottomRight.y) {
-      boundary.bottomRight.y = blockBoundary.bottomRight.y;
-    }
+  } else {
+    // Initialize boundary using the first group.
+    var g = groups[0];
+    boundary = {topLeft: {x: g.x, y: g.y},
+      bottomRight: {x: g.x + g.width, y: g.y + g.height}};
   }
+
+  // Expand to include groups.
+  for (var i = 0; i < groups.length; i++) {
+    var group = groups[i];
+    var left = group.x;
+    var top = group.y;
+    var right = left + group.width;
+    var bottom = top + group.height;
+    if (left < boundary.topLeft.x) boundary.topLeft.x = left;
+    if (top < boundary.topLeft.y) boundary.topLeft.y = top;
+    if (right > boundary.bottomRight.x) boundary.bottomRight.x = right;
+    if (bottom > boundary.bottomRight.y) boundary.bottomRight.y = bottom;
+  }
+
   return {
     x: boundary.topLeft.x,
     y: boundary.topLeft.y,
@@ -1508,21 +1651,163 @@ Blockly.WorkspaceSvg.prototype.getBlocksBoundingBox = function() {
 
 /**
  * Clean up the workspace by ordering all the blocks in a column.
+ * Enhanced version that groups blocks into columns based on their x position
+ * and handles comments and unused variables.
+ * @param {Blockly.Block=} opt_blockToMakeSpaceFor Optional block to make extra space around.
  */
-Blockly.WorkspaceSvg.prototype.cleanUp = function() {
+Blockly.WorkspaceSvg.prototype.cleanUp = function(opt_blockToMakeSpaceFor) {
+  // Only treat as a block if it's actually a block object (context menu passes true)
+  var makeSpaceForBlock = opt_blockToMakeSpaceFor && typeof opt_blockToMakeSpaceFor.getRootBlock === 'function'
+      ? opt_blockToMakeSpaceFor.getRootBlock() : null;
+
   this.setResizesEnabled(false);
   Blockly.Events.setGroup(true);
-  var topBlocks = this.getTopBlocks(true);
-  var cursorY = 0;
-  for (var i = 0, block; block = topBlocks[i]; i++) {
-    var xy = block.getRelativeToSurfaceXY();
-    block.moveBy(-xy.x, cursorY - xy.y);
-    block.snapToGrid();
-    cursorY = block.getRelativeToSurfaceXY().y +
-        block.getHeightWidth().height + Blockly.BlockSvg.MIN_BLOCK_Y;
+
+  // Get ordered top block columns
+  var result = this.getOrderedTopBlockColumns_();
+  var columns = result.cols;
+
+  // Treat each group and its scripts as one cleanup unit. Group-owned stacks
+  // must not also pass through the regular block layout below.
+  var groups = this.getGroups().sort(function(a, b) {
+    return a.x - b.x || a.y - b.y;
+  });
+  var groupedBlockIds = Object.create(null);
+  groups.forEach(function(group) {
+    group.blockIds.forEach(function(id) { groupedBlockIds[id] = true; });
+  });
+  columns.forEach(function(column) {
+    column.blocks = column.blocks.filter(function(block) {
+      return !groupedBlockIds[block.id];
+    });
+  });
+  columns = columns.filter(function(column) { return column.blocks.length; });
+
+  // Position blocks in columns
+  var cursorX = 48;
+  var maxWidths = result.maxWidths;
+
+  if (groups.length) {
+    var groupCursorY = 64;
+    var widestGroup = 0;
+    groups.forEach(function(group) {
+      group.moveBy(cursorX - group.x, groupCursorY - group.y);
+      groupCursorY += group.height + 72;
+      widestGroup = Math.max(widestGroup, group.width);
+    });
+    cursorX += widestGroup + 96;
   }
+
+  for (var c = 0; c < columns.length; c++) {
+    var column = columns[c];
+    var cursorY = 64;
+    var maxWidth = 0;
+
+    for (var b = 0; b < column.blocks.length; b++) {
+      var block = column.blocks[b];
+      var extraWidth = block === makeSpaceForBlock ? 380 : 0;
+      var extraHeight = block === makeSpaceForBlock ? 480 : 72;
+      var xy = block.getRelativeToSurfaceXY();
+
+      if (cursorX - xy.x !== 0 || cursorY - xy.y !== 0) {
+        block.moveBy(cursorX - xy.x, cursorY - xy.y);
+      }
+
+      var heightWidth = block.getHeightWidth();
+      cursorY += heightWidth.height + extraHeight;
+
+      var maxWidthWithComments = maxWidths[block.id] || 0;
+      maxWidth = Math.max(maxWidth,
+          Math.max(heightWidth.width + extraWidth, maxWidthWithComments));
+    }
+
+    cursorX += maxWidth + 96;
+  }
+
+  // Reposition comments
+  var topComments = this.getTopComments(false);
+  for (var i = 0; i < topComments.length; i++) {
+    var comment = topComments[i];
+    if (comment.setVisible) {
+      comment.setVisible(false);
+      comment.needsAutoPositioning_ = true;
+      comment.setVisible(true);
+    }
+  }
+
   Blockly.Events.setGroup(false);
   this.setResizesEnabled(true);
+};
+
+/**
+ * Split the top blocks into ordered columns based on their x position.
+ * @return {!Object} An object with cols and maxWidths.
+ * @private
+ */
+Blockly.WorkspaceSvg.prototype.getOrderedTopBlockColumns_ = function() {
+  var topBlocks = this.getTopBlocks(false);
+  var maxWidths = {};
+
+  var topComments = this.getTopComments(false);
+
+  // Calculate max widths from comments
+  for (var i = 0; i < topComments.length; i++) {
+    var comment = topComments[i];
+    if (comment.setVisible) {
+      comment.setVisible(false);
+      comment.needsAutoPositioning_ = true;
+      comment.setVisible(true);
+
+      var right = comment.getBoundingRectangle().bottomRight.x;
+
+      // Get top block for stack
+      var root = comment.block_.getRootBlock();
+      var left = root.getBoundingRectangle().topLeft.x;
+      maxWidths[root.id] = Math.max(right - left, maxWidths[root.id] || 0);
+    }
+  }
+
+  // Group blocks into columns based on x position tolerance
+  var cols = [];
+  var TOLERANCE = 256;
+
+  for (var i = 0; i < topBlocks.length; i++) {
+    var topBlock = topBlocks[i];
+    var position = topBlock.getRelativeToSurfaceXY();
+
+    // Find the best matching column
+    var bestCol = null;
+    var bestError = TOLERANCE;
+
+    for (var j = 0; j < cols.length; j++) {
+      var err = Math.abs(position.x - cols[j].x);
+      if (err < bestError) {
+        bestError = err;
+        bestCol = cols[j];
+      }
+    }
+
+    if (bestCol) {
+      // Add to existing column and update average x position
+      bestCol.x = (bestCol.x * bestCol.count + position.x) / ++bestCol.count;
+      bestCol.blocks.push(topBlock);
+    } else {
+      // Create a new column
+      cols.push({x: position.x, count: 1, blocks: [topBlock]});
+    }
+  }
+
+  // Sort columns by x position
+  cols.sort((a, b) => a.x - b.x);
+
+  // Sort blocks in columns by y position
+  for (var i = 0; i < cols.length; i++) {
+    cols[i].blocks.sort(function(a, b) {
+      return a.getRelativeToSurfaceXY().y - b.getRelativeToSurfaceXY().y;
+    });
+  }
+
+  return {cols: cols, maxWidths: maxWidths};
 };
 
 /**
@@ -1536,6 +1821,7 @@ Blockly.WorkspaceSvg.prototype.showContextMenu_ = function(e) {
   }
   var menuOptions = [];
   var topBlocks = this.getTopBlocks(true);
+  var allBlocks = this.getAllBlocks(true);
   var eventGroup = Blockly.utils.genUid();
   var ws = this;
 
@@ -1575,6 +1861,7 @@ Blockly.WorkspaceSvg.prototype.showContextMenu_ = function(e) {
   if (this.options.comments) {
     menuOptions.push(Blockly.ContextMenu.workspaceCommentOption(ws, e));
   }
+  menuOptions.push(Blockly.ContextMenu.workspaceGroupOption(ws, e));
 
   // Option to delete all blocks.
   // Count the number of blocks that are deletable.
@@ -1587,7 +1874,7 @@ Blockly.WorkspaceSvg.prototype.showContextMenu_ = function(e) {
     }
   }
 
-  var DELAY = 10;
+  var DELAY = 9;
   function deleteNext() {
     Blockly.Events.setGroup(eventGroup);
     var block = deleteList.shift();
@@ -1624,6 +1911,59 @@ Blockly.WorkspaceSvg.prototype.showContextMenu_ = function(e) {
     }
   };
   menuOptions.push(deleteOption);
+
+  // Option to delete all orphan blocks.
+  // Count the number of blocks that are orphaned.
+  var orphanCount = 0;
+  for (var i = 0; i < allBlocks.length; i++) {
+    const b = allBlocks[i];
+    if (!!b.outputConnection && !b.parentBlock_) {
+      orphanCount++;
+    }
+  }
+  menuOptions.push(Blockly.ContextMenu.workspaceDeleteOrphansOption(ws,orphanCount));
+
+  // Option to delete unused local variables and lists.
+  var map = ws.getVariableMap();
+  var unusedVarCount = 0;
+  var unusedListCount = 0;
+  var unusedTableCount = 0;
+
+  var vars = map.getVariablesOfType('');
+  for (var i = 0; i < vars.length; i++) {
+    if (vars[i].isLocal) {
+      var usages = map.getVariableUsesById(vars[i].getId());
+      if (!usages || usages.length === 0) {
+        unusedVarCount++;
+      }
+    }
+  }
+
+  var lists = map.getVariablesOfType(Blockly.LIST_VARIABLE_TYPE);
+  for (var i = 0; i < lists.length; i++) {
+    if (lists[i].isLocal) {
+      var usages = map.getVariableUsesById(lists[i].getId());
+      if (!usages || usages.length === 0) {
+        unusedListCount++;
+      }
+    }
+  }
+
+  var tables = map.getVariablesOfType(Blockly.TABLE_VARIABLE_TYPE);
+  for (var i = 0; i < tables.length; i++) {
+    if (tables[i].isLocal) {
+      var usages = map.getVariableUsesById(tables[i].getId());
+      if (!usages || usages.length === 0) {
+        unusedTableCount++;
+      }
+    }
+  }
+
+  menuOptions.push(
+      Blockly.ContextMenu.workspaceCleanupUnusedVarsOption(
+          ws, unusedVarCount, unusedListCount, unusedTableCount
+      )
+  );
 
   Blockly.ContextMenu.show(e, menuOptions, this.RTL);
 };

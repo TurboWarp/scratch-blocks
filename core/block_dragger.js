@@ -30,6 +30,7 @@ goog.require('Blockly.BlockAnimations');
 goog.require('Blockly.Events.BlockMove');
 goog.require('Blockly.Events.DragBlockOutside');
 goog.require('Blockly.Events.EndBlockDrag');
+goog.require('Blockly.Group');
 goog.require('Blockly.InsertionMarkerManager');
 
 goog.require('goog.math.Coordinate');
@@ -255,6 +256,7 @@ Blockly.BlockDragger.prototype.endBlockDrag = function(e, currentDragDeltaXY) {
     } else {
       this.draggingBlock_.render();
     }
+    this.fitGroupAroundBlock_();
     this.draggingBlock_.scheduleSnapAndBump();
   }
   this.workspace_.setResizesEnabled(true);
@@ -298,6 +300,36 @@ Blockly.BlockDragger.prototype.endBlockDrag = function(e, currentDragDeltaXY) {
       ws.refreshToolboxSelection_();
     });
   }
+};
+
+/**
+ * Adopt the dropped stack into the group under its top-left corner.
+ * @private
+ */
+Blockly.BlockDragger.prototype.fitGroupAroundBlock_ = function() {
+  var block = this.draggingBlock_.getRootBlock();
+  if (block !== this.draggingBlock_) return;
+  var bounds = block.getBoundingRectangle();
+  var x = bounds.topLeft.x;
+  var y = bounds.topLeft.y;
+  var groups = this.workspace_.getGroups().slice().reverse();
+  var destination = null;
+  for (var i = 0; i < groups.length; i++) {
+    var group = groups[i];
+    if (!group.collapsed && x >= group.x && x <= group.x + group.width &&
+        y >= group.y + 32 && y <= group.y + group.height) {
+      destination = group;
+      break;
+    }
+  }
+  if (!destination) {
+    // This lookup removes stale ownership when a stack was dragged out of its
+    // previous expanded group and dropped onto empty workspace.
+    this.workspace_.getGroupForBlock(block.id);
+    return;
+  }
+  var owner = this.workspace_.getGroupForBlock(block.id, destination);
+  if (!owner) destination.fitBlock(block);
 };
 
 /**

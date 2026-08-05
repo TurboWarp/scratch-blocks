@@ -27,6 +27,7 @@
 goog.provide('Blockly.Input');
 
 goog.require('Blockly.Connection');
+goog.require('Blockly.FieldCheckbox');
 goog.require('Blockly.FieldLabel');
 goog.require('goog.asserts');
 
@@ -58,12 +59,26 @@ Blockly.Input = function(type, name, block, connection) {
   /** @type {!Array.<!Blockly.Field>} */
   this.fieldRow = [];
 
+  /** @type {boolean?} */
+  this.isNewRow = null;
+
   /**
    * The shape that is displayed when this input is rendered but not filled.
    * @type {SVGElement}
    * @package
    */
   this.outlinePath = null;
+
+  /**
+   * If this input belongs to an extendable field, the name of said field.
+   * @type {string}
+   */
+  this.extendableName = null;
+  /**
+   * If this input belongs to an extendable field, the input's index in said field.
+   * @type {number}
+   */
+  this.extendableIndex = null;
 };
 
 /**
@@ -114,6 +129,7 @@ Blockly.Input.prototype.insertFieldAt = function(index, field, opt_name) {
   if (goog.isString(field)) {
     field = new Blockly.FieldLabel(/** @type {string} */ (field));
   }
+  field.setSourceInput(this);
   field.setSourceBlock(this.sourceBlock_);
   if (this.sourceBlock_.rendered) {
     field.init();
@@ -132,6 +148,8 @@ Blockly.Input.prototype.insertFieldAt = function(index, field, opt_name) {
     index = this.insertFieldAt(index, field.suffixField);
   }
 
+  field.insertedInto(this, this.sourceBlock_);
+
   if (this.sourceBlock_.rendered) {
     this.sourceBlock_.render();
     // Adding a field will cause the block to change shape.
@@ -148,8 +166,8 @@ Blockly.Input.prototype.insertFieldAt = function(index, field, opt_name) {
 Blockly.Input.prototype.removeField = function(name) {
   for (var i = 0, field; field = this.fieldRow[i]; i++) {
     if (field.name === name) {
-      field.dispose();
       this.fieldRow.splice(i, 1);
+      field.dispose();
       if (this.sourceBlock_.rendered) {
         this.sourceBlock_.render();
         // Removing a field will cause the block to change shape.
@@ -248,6 +266,10 @@ Blockly.Input.prototype.init = function() {
  * Sever all links to this input.
  */
 Blockly.Input.prototype.dispose = function() {
+  if (this.mouseDownWrapper_) {
+    Blockly.unbindEvent_(this.mouseDownWrapper_);
+    this.mouseDownWrapper_ = null;
+  }
   if (this.outlinePath) {
     goog.dom.removeNode(this.outlinePath);
   }
@@ -269,17 +291,53 @@ Blockly.Input.prototype.initOutlinePath = function(svgRoot) {
   if (!this.sourceBlock_.workspace.rendered) {
     return;  // Headless blocks don't need field outlines.
   }
-  if (this.outlinePath) {
+  if (this.type != Blockly.INPUT_VALUE || this.outlinePath) {
     return;
   }
-  if (this.type == Blockly.INPUT_VALUE) {
-    this.outlinePath = Blockly.utils.createSvgElement(
-        'path',
-        {
-          'class': 'blocklyPath',
-          'style': 'visibility: hidden', // Hide by default - shown when not connected.
-          'd': ''  // IE doesn't like paths without the data definition, set an empty default
-        },
-        svgRoot);
+  this.outlinePath = Blockly.utils.createSvgElement(
+      'path',
+      {
+        'class': 'blocklyPath blocklyInputOutline',
+        'style': 'visibility: hidden', // Hide by default - shown when not connected.
+        'd': ''  // IE doesn't like paths without the data definition, set an empty default
+      },
+      svgRoot);
+  this.mouseDownWrapper_ = Blockly.bindEventWithChecks_(
+      this.outlinePath, 'mousedown', this, this.onMouseDown_);
+};
+
+/**
+ * Handle a mouse down event on an input.
+ * @param {!Event} e Mouse down event.
+ * @private
+ */
+Blockly.Input.prototype.onMouseDown_ = function(e) {
+  if (!this.sourceBlock_ || !this.sourceBlock_.workspace) {
+    return;
+  }
+  if (this.sourceBlock_.workspace.isDragging()) {
+    return;
+  }
+  var gesture = this.sourceBlock_.workspace.getGesture(e);
+  if (gesture) {
+    gesture.setStartInput(this);
+  }
+};
+
+Blockly.Input.prototype.isClickable = function() {
+  if (!this.isVisible() || !this.sourceBlock_) return false;
+  if (this.connection.isConnected()) return false;
+
+  var check = this.connection.check_ || [];
+
+  if (check.indexOf('Boolean') !== -1) return true;
+  return false;
+};
+
+Blockly.Input.prototype.onClick = function() {
+  var check = this.connection.check_ || [];
+
+  if (check.indexOf('Boolean') !== -1) {
+    Blockly.FieldCheckbox.connectBoolean(this);
   }
 };

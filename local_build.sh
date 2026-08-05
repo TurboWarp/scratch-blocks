@@ -60,6 +60,8 @@ java -jar $COMPILER \
   --compilation_level SIMPLE_OPTIMIZATIONS \
   --dependency_mode=STRICT \
   --entry_point=Blockly \
+  --language_in=ECMASCRIPT_NEXT \
+  --language_out=ECMASCRIPT_2019 \
   --js_output_file local_blockly_compressed_vertical.js
 
 if [ -s local_blockly_compressed_vertical.js ]; then

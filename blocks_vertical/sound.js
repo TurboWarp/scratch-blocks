@@ -80,6 +80,7 @@ Blockly.Blocks['sound_play'] = {
         }
       ],
       "category": Blockly.Categories.sound,
+      "switches": ["sound_playuntildone"],
       "extensions": ["colours_sounds", "shape_statement"]
     });
   }
@@ -100,6 +101,7 @@ Blockly.Blocks['sound_playuntildone'] = {
         }
       ],
       "category": Blockly.Categories.sound,
+      "switches": ["sound_play"],
       "extensions": ["colours_sounds", "shape_statement"]
     });
   }
@@ -142,6 +144,7 @@ Blockly.Blocks['sound_seteffectto'] = {
         }
       ],
       "category": Blockly.Categories.sound,
+      "switches": ["sound_changeeffectby"],
       "extensions": ["colours_sounds", "shape_statement"]
     });
   }
@@ -171,6 +174,7 @@ Blockly.Blocks['sound_changeeffectby'] = {
         }
       ],
       "category": Blockly.Categories.sound,
+      "switches": ["sound_seteffectto"],
       "extensions": ["colours_sounds", "shape_statement"]
     });
   }
@@ -205,6 +209,7 @@ Blockly.Blocks['sound_changevolumeby'] = {
         }
       ],
       "category": Blockly.Categories.sound,
+      "switches": ["sound_setvolumeto"],
       "extensions": ["colours_sounds", "shape_statement"]
     });
   }
@@ -225,6 +230,7 @@ Blockly.Blocks['sound_setvolumeto'] = {
         }
       ],
       "category": Blockly.Categories.sound,
+      "switches": ["sound_changevolumeby"],
       "extensions": ["colours_sounds", "shape_statement"]
     });
   }

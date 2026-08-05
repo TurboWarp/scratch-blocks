@@ -303,6 +303,35 @@ Blockly.VariableMap.prototype.deleteVariableInternal_ = function(variable,
 
 /* End functions for variable deletion. */
 
+/* Begin functions for replacing variables. */
+
+/**
+ * Replace all uses of one variable with another existing variable.
+ * @param {string} oldId ID of the variable to replace.
+ * @param {string} newId ID of the variable to replace with.
+ */
+Blockly.VariableMap.prototype.replaceVariableById = function(oldId, newId) {
+  var oldVar = this.getVariableById(oldId);
+  var newVar = this.getVariableById(newId);
+  if (!oldVar) {
+    throw new Error("Tried to replace a variable that didn't exist. ID: " + oldId);
+  }
+  if (!newVar) {
+    throw new Error("Tried to replace a variable with one that doesn't exist. ID: " + newId);
+  }
+  var blocks = this.getVariableUsesById(oldId);
+  Blockly.Events.setGroup(true);
+  try {
+    for (var i = 0; i < blocks.length; i++) {
+      blocks[i].renameVarById(oldId, newId);
+    }
+  } finally {
+    Blockly.Events.setGroup(false);
+  }
+};
+
+/* End functions for replacing variables. */
+
 /**
  * Find the variable by the given name and type and return it.  Return null if
  *     it is not found.

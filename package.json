@@ -13,7 +13,7 @@
   "browser": "./shim/vertical.js",
   "scripts": {
     "deploy": "rimraf gh-pages/closure-library/scripts/ci/CloseAdobeDialog.exe && gh-pages -t -d gh-pages -m \"Build for $(git log --pretty=format:%H -n1) [skip ci]\"",
-    "prepublish": "node universal-python.js build.py && webpack",
+    "prepublish": "node build && webpack",
     "test:unit": "node tests/jsunit/test_runner.js",
     "test:lint": "eslint .",
     "test:messages": "npm run translate && node i18n/test_scratch_msgs.js",
@@ -36,7 +36,7 @@
     "event-stream": "3.3.5",
     "gh-pages": "0.12.0",
     "glob": "7.2.3",
-    "google-closure-compiler": "20180402.0.0",
+    "google-closure-compiler": "^20190301.0.0",
     "google-closure-library": "20190301.0.0",
     "graceful-fs": "4.2.11",
     "json": "9.0.6",

@@ -64,8 +64,19 @@ Blockly.scratchBlocksUtils.changeObscuredShadowIds = function(block) {
       if (connection) {
         var shadowDom = connection.getShadowDom();
         if (shadowDom) {
-          shadowDom.setAttribute('id', Blockly.utils.genUid());
+          var newId = Blockly.utils.genUid();
+          var oldId = shadowDom.getAttribute('id');
+          shadowDom.setAttribute('id', newId);
           connection.setShadowDom(shadowDom);
+          // Update the ID to match VM
+          var targetBlock = connection.targetBlock();
+          if (targetBlock && targetBlock.isShadow()) {
+            if (targetBlock.workspace) {
+              delete targetBlock.workspace.blockDB_[oldId];
+              targetBlock.workspace.blockDB_[newId] = targetBlock;
+            }
+            targetBlock.id = newId;
+          }
         }
       }
     }
@@ -100,8 +111,7 @@ Blockly.scratchBlocksUtils.changeCopiedBlockIds = function(xmlBlock) {
  * @package
  */
 Blockly.scratchBlocksUtils.isShadowArgumentReporter = function(block) {
-  return (block.isShadow() && (block.type == 'argument_reporter_boolean' ||
-      block.type == 'argument_reporter_string_number'));
+  return (block.isShadow() && block.type.startsWith("argument_reporter_"));
 };
 
 /**

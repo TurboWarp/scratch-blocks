@@ -291,7 +291,11 @@ Blockly.BlockSvg.prototype.setIntersects = function(intersects) {
     return;
   }
   if (intersects) {
-    root.style.display = '';
+    var groups = this.workspace.getGroups ? this.workspace.getGroups() : [];
+    var hiddenByGroup = groups.some(function(group) {
+      return group.collapsed && group.blockIds.indexOf(this.id) !== -1;
+    }, this);
+    root.style.display = hiddenByGroup ? 'none' : '';
   } else {
     root.style.display = 'none';
   }
@@ -341,8 +345,16 @@ Blockly.BlockSvg.prototype.setParent = function(newParent) {
     this.moveConnections_(newXY.x - oldXY.x, newXY.y - oldXY.y);
     // If we are a shadow block, inherit tertiary colour.
     if (this.isShadow()) {
-      this.setColour(this.getColour(), this.getColourSecondary(),
-          newParent.getColourTertiary(), this.getColourQuaternary());
+      if (this.type == 'procedures_dropdown') {
+        // Procedure dropdown shadows are part of the custom block's visual
+        // palette. XML loading creates and connects them after the caller's
+        // mutation has rendered, so inherit every colour at connection time.
+        this.setColour(newParent.getColour(), newParent.getColourSecondary(),
+            newParent.getColourTertiary(), newParent.getColourQuaternary());
+      } else {
+        this.setColour(this.getColour(), this.getColourSecondary(),
+            newParent.getColourTertiary(), this.getColourQuaternary());
+      }
     }
   }
   // If we are losing a parent, we want to move our DOM element to the
@@ -576,7 +588,11 @@ Blockly.BlockSvg.prototype.setCollapsed = function(collapsed) {
   if (this.collapsed_ == collapsed) {
     return;
   }
-  var renderList = [];
+  // Disable collapsing for procedures definition.
+  if (this.type === 'procedures_definition') {
+    return;
+  }
+  var renderList = [this];
   // Show/hide the inputs.
   for (var i = 0, input; input = this.inputList[i]; i++) {
     renderList.push.apply(renderList, input.setVisible(!collapsed));
@@ -586,7 +602,7 @@ Blockly.BlockSvg.prototype.setCollapsed = function(collapsed) {
   if (collapsed) {
     var icons = this.getIcons();
     for (var i = 0; i < icons.length; i++) {
-      icons[i].setVisible(false);
+      //icons[i].setVisible(false);
     }
     var text = this.toString(Blockly.COLLAPSE_CHARS);
     this.appendDummyInput(COLLAPSED_INPUT_NAME).appendField(text).init();
@@ -597,10 +613,6 @@ Blockly.BlockSvg.prototype.setCollapsed = function(collapsed) {
   }
   Blockly.BlockSvg.superClass_.setCollapsed.call(this, collapsed);
 
-  if (!renderList.length) {
-    // No child blocks, just render this block.
-    renderList[0] = this;
-  }
   if (this.rendered) {
     for (var i = 0, block; block = renderList[i]; i++) {
       block.render();
@@ -715,10 +727,24 @@ Blockly.BlockSvg.prototype.showContextMenu_ = function(e) {
     if (this.isEditable() && this.workspace.options.comments) {
       menuOptions.push(Blockly.ContextMenu.blockCommentOption(block));
     }
+    menuOptions.push(Blockly.ContextMenu.blockGroupOption(block));
+    if (this.workspace.options.collapse) {
+      menuOptions.push(Blockly.ContextMenu.blockCollapseOption(block));
+    }
     menuOptions.push(Blockly.ContextMenu.blockDeleteOption(block));
+    menuOptions.push(Blockly.ContextMenu.blockMakeSpaceOption(block));
   } else if (this.parentBlock_ && this.isShadow_) {
     this.parentBlock_.showContextMenu_(e);
     return;
+  }
+
+  if (!block.isInFlyout && this.getSwitches && this.getSwitches().length > 0) {
+    var switchOptions = Blockly.ContextMenu.blockSwitchOption(this);
+    menuOptions.push.apply(menuOptions, switchOptions);
+  }
+
+  if (!block.isInFlyout && !this.workspace.options.disableInspectBlock) {
+    menuOptions.push(Blockly.ContextMenu.blockInspectOption(this));
   }
 
   // Allow the block to add or modify menuOptions.
@@ -825,6 +851,11 @@ Blockly.BlockSvg.prototype.setEditable = function(editable) {
 Blockly.BlockSvg.prototype.setShadow = function(shadow) {
   Blockly.BlockSvg.superClass_.setShadow.call(this, shadow);
   this.updateColour();
+
+  if (this.rendered) {
+    this.render();
+    this.bumpNeighbours_();
+  }
 };
 
 /**
@@ -929,14 +960,15 @@ Blockly.BlockSvg.prototype.getCommentText = function() {
  * @param {number=} commentX Optional x position for scratch comment in workspace coordinates
  * @param {number=} commentY Optional y position for scratch comment in workspace coordinates
  * @param {boolean=} minimized Optional minimized state for scratch comment, defaults to false
+ * @param {string=} colour Optional custom comment colour.
  */
 Blockly.BlockSvg.prototype.setCommentText = function(text, commentId,
-    commentX, commentY, minimized) {
+    commentX, commentY, minimized, colour) {
   var changedState = false;
   if (goog.isString(text)) {
     if (!this.comment) {
       this.comment = new Blockly.ScratchBlockComment(this, text, commentId,
-          commentX, commentY, minimized);
+          commentX, commentY, minimized, colour);
       changedState = true;
     } else {
       this.comment.setText(/** @type {string} */ (text));
@@ -1230,11 +1262,12 @@ Blockly.BlockSvg.prototype.moveNumberedInputBefore = function(
  *     Blockly.DUMMY_INPUT.
  * @param {string} name Language-neutral identifier which may used to find this
  *     input again.  Should be unique to this block.
+ * @param {number=} opt_position Position to insert this input into. Optional.
  * @return {!Blockly.Input} The input object created.
  * @private
  */
-Blockly.BlockSvg.prototype.appendInput_ = function(type, name) {
-  var input = Blockly.BlockSvg.superClass_.appendInput_.call(this, type, name);
+Blockly.BlockSvg.prototype.appendInput_ = function(type, name, opt_position) {
+  var input = Blockly.BlockSvg.superClass_.appendInput_.call(this, type, name, opt_position);
 
   if (this.rendered) {
     this.render();

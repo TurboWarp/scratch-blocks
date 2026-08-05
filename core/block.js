@@ -143,6 +143,18 @@ Blockly.Block = function(workspace, prototypeName, opt_id) {
   this.outputShape_ = null;
 
   /**
+   * @type {boolean}
+   * @private
+   */
+  this.duplicateOnDrag_ = false;
+
+  /**
+   * @type {Array<string>}
+   * @private
+   */
+  this.switches_ = false;
+
+  /**
    * @type {?string}
    * @private
    */
@@ -654,10 +666,35 @@ Blockly.Block.prototype.isShadow = function() {
 
 /**
  * Set whether this block is a shadow block or not.
- * @param {boolean} shadow True if a shadow.
+ * @param {boolean} newBoolean True if a shadow.
  */
-Blockly.Block.prototype.setShadow = function(shadow) {
-  this.isShadow_ = shadow;
+Blockly.Block.prototype.setShadow = function(newBoolean) {
+  if (this.isShadow_ != newBoolean) {
+    Blockly.Events.fire(new Blockly.Events.BlockChange(
+        this, 'shadow', null, this.isShadow_, newBoolean));
+    this.isShadow_ = newBoolean;
+  }
+};
+
+/**
+ * Check whether a given field is the only field on this block.
+ * All inputs must be DUMMY_INPUTs and this must be the sole field across them.
+ * @param {!Blockly.Field} field The field to check.
+ * @return {boolean} True if the field is the only content on this block.
+ */
+Blockly.Block.prototype.isOnlyField = function(field) {
+  for (var i = 0; i < this.inputList.length; i++) {
+    var input = this.inputList[i];
+    if (input.type !== Blockly.DUMMY_INPUT) {
+      return false;
+    }
+    for (var j = 0; j < input.fieldRow.length; j++) {
+      if (input.fieldRow[j] !== field) {
+        return false;
+      }
+    }
+  }
+  return true;
 };
 
 /**
@@ -1037,7 +1074,7 @@ Blockly.Block.prototype.setFieldValue = function(newValue, name) {
 Blockly.Block.prototype.setPreviousStatement = function(newBoolean, opt_check) {
   if (newBoolean) {
     if (opt_check === undefined) {
-      opt_check = null;
+      opt_check = "normal";
     }
     if (!this.previousConnection) {
       goog.asserts.assert(!this.outputConnection,
@@ -1065,7 +1102,7 @@ Blockly.Block.prototype.setPreviousStatement = function(newBoolean, opt_check) {
 Blockly.Block.prototype.setNextStatement = function(newBoolean, opt_check) {
   if (newBoolean) {
     if (opt_check === undefined) {
-      opt_check = null;
+      opt_check = "normal";
     }
     if (!this.nextConnection) {
       this.nextConnection = this.makeConnection_(Blockly.NEXT_STATEMENT);
@@ -1202,16 +1239,19 @@ Blockly.Block.prototype.setCollapsed = function(collapsed) {
  * @param {number=} opt_maxLength Truncate the string to this length.
  * @param {string=} opt_emptyToken The placeholder string used to denote an
  *     empty field. If not specified, '?' is used.
+ * @param {boolean=} opt_showImageAlts Whether to show the alt text of icons.
  * @return {string} Text of block.
  */
-Blockly.Block.prototype.toString = function(opt_maxLength, opt_emptyToken) {
+Blockly.Block.prototype.toString = function(opt_maxLength, opt_emptyToken, opt_showImageAlts) {
   var text = [];
   var emptyFieldPlaceholder = opt_emptyToken || '?';
+  var showImageAlts = opt_showImageAlts != null ? opt_showImageAlts : true;
   if (this.collapsed_) {
     text.push(this.getInput('_TEMP_COLLAPSED_INPUT').fieldRow[0].text_);
   } else {
     for (var i = 0, input; input = this.inputList[i]; i++) {
       for (var j = 0, field; field = input.fieldRow[j]; j++) {
+        if (field instanceof Blockly.FieldImage && !showImageAlts) continue;
         if (field instanceof Blockly.FieldDropdown && !field.getValue()) {
           text.push(emptyFieldPlaceholder);
         } else {
@@ -1221,14 +1261,14 @@ Blockly.Block.prototype.toString = function(opt_maxLength, opt_emptyToken) {
       if (input.connection) {
         var child = input.connection.targetBlock();
         if (child) {
-          text.push(child.toString(undefined, opt_emptyToken));
-        } else {
-          text.push(emptyFieldPlaceholder);
+          text.push(child.toString(undefined, emptyFieldPlaceholder, showImageAlts));
+        } else if (text[text.length - 1] != "...") {
+          text.push('...');
         }
       }
     }
   }
-  text = goog.string.trim(text.join(' ')) || '???';
+  text = goog.string.trim(text.join(' ')) || emptyFieldPlaceholder;
   if (opt_maxLength) {
     // TODO: Improve truncation so that text from this block is given priority.
     // E.g. "1+2+3+4+5+6+7+8+9=0" should be "...6+7+8+9=0", not "1+2+3+4+5...".
@@ -1242,30 +1282,35 @@ Blockly.Block.prototype.toString = function(opt_maxLength, opt_emptyToken) {
  * Shortcut for appending a value input row.
  * @param {string} name Language-neutral identifier which may used to find this
  *     input again.  Should be unique to this block.
+ * @param {number=} opt_position Position to insert this input into. Optional.
  * @return {!Blockly.Input} The input object created.
  */
-Blockly.Block.prototype.appendValueInput = function(name) {
-  return this.appendInput_(Blockly.INPUT_VALUE, name);
+Blockly.Block.prototype.appendValueInput = function(name, opt_position) {
+  return this.appendInput_(Blockly.INPUT_VALUE, name, opt_position);
 };
 
 /**
  * Shortcut for appending a statement input row.
  * @param {string} name Language-neutral identifier which may used to find this
  *     input again.  Should be unique to this block.
+ * @param {number=} opt_position Position to insert this input into. Optional.
  * @return {!Blockly.Input} The input object created.
  */
-Blockly.Block.prototype.appendStatementInput = function(name) {
-  return this.appendInput_(Blockly.NEXT_STATEMENT, name);
+Blockly.Block.prototype.appendStatementInput = function(name, opt_position) {
+  let output = this.appendInput_(Blockly.NEXT_STATEMENT, name, opt_position);
+  output.setCheck("normal")
+  return output
 };
 
 /**
  * Shortcut for appending a dummy input row.
  * @param {string=} opt_name Language-neutral identifier which may used to find
  *     this input again.  Should be unique to this block.
+ * @param {number=} opt_position Position to insert this input into. Optional.
  * @return {!Blockly.Input} The input object created.
  */
-Blockly.Block.prototype.appendDummyInput = function(opt_name) {
-  return this.appendInput_(Blockly.DUMMY_INPUT, opt_name || '');
+Blockly.Block.prototype.appendDummyInput = function(opt_name, opt_position) {
+  return this.appendInput_(Blockly.DUMMY_INPUT, opt_name || '', opt_position);
 };
 
 /**
@@ -1320,6 +1365,12 @@ Blockly.Block.prototype.jsonInit = function(json) {
     var rawValue = json['helpUrl'];
     var localizedValue = Blockly.utils.replaceMessageReferences(rawValue);
     this.setHelpUrl(localizedValue);
+  }
+  if (json['duplicateOnDrag'] !== undefined) {
+    this.setDuplicateOnDrag(json['duplicateOnDrag']);
+  }
+  if (json['switches'] !== undefined) {
+    this.setSwitches(json['switches']);
   }
   if (goog.isString(json['extensions'])) {
     console.warn('JSON attribute \'extensions\' should be an array of ' +
@@ -1445,9 +1496,15 @@ Blockly.Block.prototype.interpolate_ = function(message, args, lastDummyAlign) {
       indexCount++;
       elements.push(args[token - 1]);
     } else {
-      token = token.trim();
-      if (token) {
-        elements.push(token);
+      if (token === "\n") {
+        elements.push("\n");
+      } else {
+        var hasNewlineStart = token.startsWith("\n") ? "\n" : "";
+        var hasNewlineEnd = token.endsWith("\n") ? "\n" : "";
+        token = hasNewlineStart + token.trim() + hasNewlineEnd;
+        if (token) {
+          elements.push(token);
+        }
       }
     }
   }
@@ -1455,67 +1512,201 @@ Blockly.Block.prototype.interpolate_ = function(message, args, lastDummyAlign) {
     throw new Error('Block "' + this.type + '": ' +
         'Message does not reference all ' + args.length + ' arg(s).');
   }
+  this.appendArgsList(elements, {lastDummyAlign: lastDummyAlign, populate: this.isInFlyout});
+};
+
+/**
+ * Add an array of block inputs in jsonInit format, optionally in specific position.
+ * @param {Array} elements The array of elements to add
+ * @param {object} options Additional options.
+ * @param {string=} options.lastDummyAlign If a dummy input is added at the end,
+ *     how should it be aligned?
+ * @param {number=} options.position The position to place the elements in.
+ * @param {boolean=} options.returnInputs If true, returns added inputs in an array.
+ * @param {string=} options.namePrefix String to prefix all input and field names with.
+ * @param {boolean=} options.populate If true, input_value shadows will automatically be populated.
+ * @returns {Array<Blockly.Input>} All inputs added, if opt_returnInputs is true.
+ */
+Blockly.Block.prototype.appendArgsList = function(
+    elements, options
+) {
+  if (!elements.length) return [];
+
+  if (!options) options = {};
+  var lastDummyAlign = options.lastDummyAlign;
+  var opt_position = options.position;
+  var opt_returnInputs = options.returnInputs;
+  var opt_namePrefix = options.namePrefix;
+  var opt_populate = options.populate;
+  var opt_isExtendable = options.isExtendable;
+  
   // Add last dummy input if needed.
+  var dummyInput;
   if (elements.length && (typeof elements[elements.length - 1] == 'string' ||
       goog.string.startsWith(
           elements[elements.length - 1]['type'], 'field_'))) {
-    var dummyInput = {type: 'input_dummy'};
+    dummyInput = {type: 'input_dummy'};
     if (lastDummyAlign) {
       dummyInput['align'] = lastDummyAlign;
     }
-    elements.push(dummyInput);
   }
+
+  if (!opt_namePrefix) {
+    opt_namePrefix = "";
+  }
+
   // Lookup of alignment constants.
   var alignmentLookup = {
     'LEFT': Blockly.ALIGN_LEFT,
     'RIGHT': Blockly.ALIGN_RIGHT,
     'CENTRE': Blockly.ALIGN_CENTRE
   };
+  var returnedInputs = [];
   // Populate block with inputs and fields.
   var fieldStack = [];
-  for (var i = 0; i < elements.length; i++) {
+  var numElements = elements.length + (dummyInput ? 1 : 0);
+
+  var emptyFieldStack = (function() {
+    if (fieldStack.length > 0) {
+      var anotherInput = this.appendDummyInput(undefined, opt_position);
+      if (opt_position !== undefined) opt_position++;
+      for (var j = 0; j < fieldStack.length; j++) {
+        anotherInput.appendField(fieldStack[j][0], fieldStack[j][1]);
+      }
+      if (opt_returnInputs) returnedInputs.push(anotherInput);
+      fieldStack.length = 0;
+    }
+  }).bind(this);
+
+  var extraElements = [];
+  for (var i = 0; i < numElements || extraElements.length > 0; extraElements.length == 0 && i++) {
     var element = elements[i];
+    if (extraElements.length > 0) {
+      element = extraElements.shift();
+    }
+    if (i == elements.length) element = dummyInput;
     if (typeof element == 'string') {
-      fieldStack.push([element, undefined]);
+      if (element.includes('\n')) {
+        var split = element.split('\n');
+        for (var j = 0; j < split.length; j++) {
+          if (j == 0) {
+            if (split[j] !== '') {
+              extraElements.push(split[j]);
+            }
+          } else {
+            if (split[j] !== '') {
+              extraElements.push({type: 'field_label', text: split[j], isNewRow: true});
+            } else {
+              extraElements.push({type: 'input_dummy', isNewRow: true});
+            }
+          }
+        }
+        continue;
+      } else {
+        fieldStack.push([element, undefined]);
+      }
     } else {
       var field = null;
       var input = null;
       do {
         var altRepeat = false;
-        if (typeof element == 'string') {
-          field = new Blockly.FieldLabel(element);
-        } else {
-          switch (element['type']) {
-            case 'input_value':
-              input = this.appendValueInput(element['name']);
-              break;
-            case 'input_statement':
-              input = this.appendStatementInput(element['name']);
-              break;
-            case 'input_dummy':
-              input = this.appendDummyInput(element['name']);
-              break;
-            default:
-              field = Blockly.Field.fromJson(element);
-
-              // Unknown field.
-              if (!field) {
-                if (element['alt']) {
-                  element = element['alt'];
-                  altRepeat = true;
-                } else {
-                  console.warn('Blockly could not create a field of type ' +
-                      element['type'] +
-                      '. You may need to register your custom field.  See ' +
-                      'github.com/google/blockly/issues/1584');
+        var name = element['name'] ? (opt_namePrefix + element['name']) : element['name'];
+        switch (element['type']) {
+          case 'input_value':
+            if (element['isNewRow'] != undefined) {
+              if (opt_position !== undefined) opt_position++;
+              emptyFieldStack();
+            }
+            input = this.appendValueInput(name, opt_position);
+            if (element['isNewRow'] != undefined) input.isNewRow = element['isNewRow'];
+            if (opt_position !== undefined) opt_position++;
+            if (opt_populate && element.shadowOpcode) {
+              var blockType = element.shadowOpcode;
+              Blockly.Events.disable();
+              try {
+                var newBlock = this.workspace.newBlock(blockType);
+                if (element.shadowFieldName) {
+                  newBlock.setFieldValue(element.shadowFieldValue, element.shadowFieldName);
                 }
+                newBlock.setShadow(true);
+                if (!this.isInsertionMarker()) {
+                  newBlock.initSvg();
+                  newBlock.render(false);
+                }
+              } finally {
+                Blockly.Events.enable();
               }
-          }
+              if (Blockly.Events.isEnabled()) {
+                Blockly.Events.fire(new Blockly.Events.BlockCreate(newBlock));
+              }
+              newBlock.outputConnection.connect(input.connection);
+            }
+            break;
+          case 'input_statement':
+            if (opt_position !== undefined) emptyFieldStack();
+            if (opt_isExtendable) name = "SUBSTACK" + name;
+            input = this.appendStatementInput(name, opt_position);
+            if (element['isNewRow'] != undefined) input.isNewRow = element['isNewRow'];
+            if (opt_position !== undefined) opt_position++;
+            if (opt_position !== undefined) emptyFieldStack();
+            break;
+          case 'input_dummy':
+            if (element['isNewRow'] != undefined) {
+              if (opt_position !== undefined) opt_position++;
+              emptyFieldStack();
+            }
+            input = this.appendDummyInput(name, opt_position);
+            if (element['isNewRow'] != undefined) input.isNewRow = element['isNewRow'];
+            if (opt_position !== undefined) opt_position++;
+            break;
+          case 'extendable':
+            // Extendable inputs should always get their own inputs
+            if (!element['name']) {
+              throw new Error('Block "' + this.type + '": ' +
+                  'Extendable inputs must have a name.');
+            }
+            if (element['name'].startsWith("SUBSTACK")) {
+              throw new Error('Block "' + this.type + '": ' +
+                  'Extendable input names must not start with "SUBSTACK".');
+            }
+            emptyFieldStack();
+            input = this.appendDummyInput(name, opt_position);
+            if (element['isNewRow'] != undefined) input.isNewRow = element['isNewRow'];
+            if (opt_position !== undefined) opt_position++;
+            field = Blockly.Field.fromJson(element);
+            break;
+          default:
+            // Place isNewRow fields in a new input, always
+            if (element['isNewRow'] != undefined) {
+              if (opt_position !== undefined) opt_position++;
+              emptyFieldStack();
+              if (!input) {
+                if (opt_position !== undefined) opt_position++;
+                input = this.appendDummyInput(name, opt_position);
+              }
+              input['isNewRow'] = element['isNewRow'];
+            }
+            field = Blockly.Field.fromJson(element);
+
+            // Unknown field.
+            if (!field) {
+              if (element['alt']) {
+                element = element['alt'];
+                altRepeat = true;
+              } else {
+                console.warn('Blockly could not create a field of type ' +
+                    element['type'] +
+                    '. You may need to register your custom field.  See ' +
+                    'github.com/google/blockly/issues/1584');
+              }
+            }
         }
       } while (altRepeat);
       if (field) {
-        fieldStack.push([field, element['name']]);
-      } else if (input) {
+        fieldStack.push([field, name]);
+      }
+      if (input) {
+        if (opt_returnInputs) returnedInputs.push(input);
         if (element['check']) {
           input.setCheck(element['check']);
         }
@@ -1529,6 +1720,7 @@ Blockly.Block.prototype.interpolate_ = function(message, args, lastDummyAlign) {
       }
     }
   }
+  return returnedInputs;
 };
 
 /**
@@ -1537,17 +1729,22 @@ Blockly.Block.prototype.interpolate_ = function(message, args, lastDummyAlign) {
  *     Blockly.DUMMY_INPUT.
  * @param {string} name Language-neutral identifier which may used to find this
  *     input again.  Should be unique to this block.
+ * @param {number=} opt_position Position to insert this input into. Optional.
  * @return {!Blockly.Input} The input object created.
  * @protected
  */
-Blockly.Block.prototype.appendInput_ = function(type, name) {
+Blockly.Block.prototype.appendInput_ = function(type, name, opt_position) {
   var connection = null;
   if (type == Blockly.INPUT_VALUE || type == Blockly.NEXT_STATEMENT) {
     connection = this.makeConnection_(type);
   }
   var input = new Blockly.Input(type, name, this, connection);
   // Append input to list.
-  this.inputList.push(input);
+  if (opt_position === undefined || opt_position < 0) {
+    this.inputList.push(input);
+  } else {
+    this.inputList.splice(opt_position, 0, input);
+  }
   return input;
 };
 
@@ -1616,25 +1813,43 @@ Blockly.Block.prototype.moveNumberedInputBefore = function(
 Blockly.Block.prototype.removeInput = function(name, opt_quiet) {
   for (var i = 0, input; input = this.inputList[i]; i++) {
     if (input.name == name) {
-      if (input.connection && input.connection.isConnected()) {
-        input.connection.setShadowDom(null);
-        var block = input.connection.targetBlock();
-        if (block.isShadow()) {
-          // Destroy any attached shadow block.
-          block.dispose();
-        } else {
-          // Disconnect any attached normal block.
-          block.unplug();
-        }
-      }
-      input.dispose();
-      this.inputList.splice(i, 1);
+      this.removeNumberedInput(i, opt_quiet);
       return;
     }
   }
   if (!opt_quiet) {
     goog.asserts.fail('Input "%s" not found.', name);
   }
+};
+
+/**
+ * Remove an input from this block by its index.
+ * @param {number} inputIndex The index of the input.
+ * @param {boolean=} opt_quiet True to prevent error if input is not present.
+ * @throws {goog.asserts.AssertionError} if the input is not present and
+ *     opt_quiet is not true.
+ */
+Blockly.Block.prototype.removeNumberedInput = function(inputIndex, opt_quiet) {
+  var input = this.inputList[inputIndex];
+  if (!input) {
+    if (!opt_quiet) {
+      goog.asserts.fail('Input "%s" not found.', inputIndex);
+    }
+    return;
+  }
+  if (input.connection && input.connection.isConnected()) {
+    input.connection.setShadowDom(null);
+    var block = input.connection.targetBlock();
+    if (block.isShadow()) {
+      // Destroy any attached shadow block.
+      block.dispose();
+    } else {
+      // Disconnect any attached normal block.
+      block.unplug();
+    }
+  }
+  this.inputList.splice(inputIndex, 1);
+  input.dispose();
 };
 
 /**
@@ -1834,4 +2049,36 @@ Blockly.Block.prototype.toDevString = function() {
     msg += ' (id="' + this.id + '")';
   }
   return msg;
+};
+
+/**
+ * Set whether this block can duplicate on drag and if it's a shadow block.
+ * @param {boolean} value True if this block should duplicate on drag.
+ */
+Blockly.Block.prototype.setDuplicateOnDrag = function(value) {
+  this.duplicateOnDrag_ = value;
+};
+
+/**
+ * Get whether this block can duplicate on drag and if it's a shadow block.
+ * @return {boolean} True if this block can duplicate on drag.
+ */
+Blockly.Block.prototype.canDuplicateOnDrag = function() {
+  return this.duplicateOnDrag_ === true && this.isShadow();
+};
+
+/**
+ * Set the blocks this block can be switched to (Example: repeat until -> while.)
+ * @param {Array<string|object>} value The blocks to be able to switch to.
+ */
+Blockly.Block.prototype.setSwitches = function(value) {
+  this.switches_ = Array.isArray(value) ? value : [];
+};
+
+/**
+ * Get the blocks this block can be switched to (Example: repeat until -> while.)
+ * @return {Array<string|object>} The blocks this block can be switched to.
+ */
+Blockly.Block.prototype.getSwitches = function() {
+  return this.switches_ || [];
 };

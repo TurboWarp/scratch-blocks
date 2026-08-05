@@ -272,6 +272,16 @@ Blockly.InsertionMarkerManager.prototype.createMarkerBlock_ = function(sourceBlo
         result.domToMutation(oldMutationDom);
       }
     }
+    for (var i = 0; i < sourceBlock.inputList.length; i++) {
+      var input = sourceBlock.inputList[i];
+      for (var j = 0; j < input.fieldRow.length; j++) {
+        var field = input.fieldRow[j];
+        if (!field.EDITABLE) continue;
+        var imField = result.getField(field.name);
+        if (!imField) continue;
+        imField.setValue(field.getValue());
+      }
+    }
     result.initSvg();
   } finally {
     Blockly.Events.enable();
