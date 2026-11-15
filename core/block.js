@@ -1366,7 +1366,7 @@ Blockly.Block.prototype.mixin = function(mixinObj, opt_disableCheck) {
   if (!opt_disableCheck) {
     var overwrites = [];
     for (var key in mixinObj) {
-      if (this[key] !== undefined) {
+      if (Object.prototype.hasOwnProperty.call(mixinObj, key) && this[key] !== undefined) {
         overwrites.push(key);
       }
     }

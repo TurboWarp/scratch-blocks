@@ -765,6 +765,7 @@ Blockly.WorkspaceSvg.prototype.processProcedureReturnsChanged_ = function() {
     // If a current procedure existed but its type has changed, the toolbox must be updated.
     // If a new procedure was created, the toolbox is already updated elsewhere.
     if (
+      Object.prototype.hasOwnProperty.call(finalTypes, procCode) &&
       Object.prototype.hasOwnProperty.call(initialTypes, procCode) &&
       initialTypes[procCode] !== finalTypes[procCode]
     ) {
