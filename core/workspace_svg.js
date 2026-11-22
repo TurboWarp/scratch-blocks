@@ -869,13 +869,16 @@ Blockly.WorkspaceSvg.prototype.getParentSvg = function() {
  * @param {number} y Vertical translation.
  */
 Blockly.WorkspaceSvg.prototype.translate = function(x, y) {
+  // Whole pixels so that the composited canvases are not rasterized again.
+  x = Math.round(x);
+  y = Math.round(y);
   if (this.useWorkspaceDragSurface_ && this.isDragSurfaceActive_) {
     this.workspaceDragSurface_.translateSurface(x,y);
   } else {
-    var translation = 'translate(' + x + ',' + y + ') ' +
+    var translation = 'translate(' + x + 'px,' + y + 'px) ' +
         'scale(' + this.scale + ')';
-    this.svgBlockCanvas_.setAttribute('transform', translation);
-    this.svgBubbleCanvas_.setAttribute('transform', translation);
+    Blockly.utils.setCssTransform(this.svgBlockCanvas_, translation);
+    Blockly.utils.setCssTransform(this.svgBubbleCanvas_, translation);
   }
   // Now update the block drag surface if we're using one.
   if (this.blockDragSurface_) {

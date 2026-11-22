@@ -181,8 +181,9 @@ Blockly.Grid.prototype.setLineAttributes_ = function(line, width, x1, x2, y1, y2
  * @package
  */
 Blockly.Grid.prototype.moveTo = function(x, y) {
-  this.gridPattern_.setAttribute('x', x);
-  this.gridPattern_.setAttribute('y', y);
+  // Match the rounding in Blockly.WorkspaceSvg.prototype.translate.
+  this.gridPattern_.setAttribute('x', Math.round(x));
+  this.gridPattern_.setAttribute('y', Math.round(y));
 
   if (goog.userAgent.IE || goog.userAgent.EDGE) {
     // IE/Edge doesn't notice that the x/y offsets have changed.

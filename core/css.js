@@ -556,6 +556,10 @@ Blockly.Css.CONTENT = [
     'display: none;',
   '}',
 
+  '.blocklyBlockCanvas, .blocklyBubbleCanvas {',
+    'will-change: transform;',
+  '}',
+
   // Explicitly hiding the descendents too improves performance in Chrome.
   '.blocklyCulled, .blocklyCulled * {',
     'display: none !important;',
