@@ -556,6 +556,11 @@ Blockly.Css.CONTENT = [
     'display: none;',
   '}',
 
+  // Explicitly hiding the descendents too improves performance in Chrome.
+  '.blocklyCulled, .blocklyCulled * {',
+    'display: none !important;',
+  '}',
+
   '.blocklyFieldDropdown:not(.blocklyHidden) {',
     'display: block;',
   '}',

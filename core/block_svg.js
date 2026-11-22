@@ -291,9 +291,9 @@ Blockly.BlockSvg.prototype.setIntersects = function(intersects) {
     return;
   }
   if (intersects) {
-    root.style.display = '';
+    Blockly.utils.removeClass(root, 'blocklyCulled');
   } else {
-    root.style.display = 'none';
+    Blockly.utils.addClass(root, 'blocklyCulled');
   }
 };
 
