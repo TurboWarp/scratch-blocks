@@ -671,8 +671,7 @@ Blockly.Xml.domToVariables = function(xmlVariables, workspace) {
 Blockly.Xml.domToBlockHeadless_ = function(xmlBlock, workspace) {
   var block = null;
   var prototypeName = xmlBlock.getAttribute('type');
-  goog.asserts.assert(
-      prototypeName, 'Block type unspecified: %s', xmlBlock.outerHTML);
+  goog.asserts.assert(prototypeName, 'Block type unspecified');
   var id = xmlBlock.getAttribute('id');
   block = workspace.newBlock(prototypeName, id);
 
